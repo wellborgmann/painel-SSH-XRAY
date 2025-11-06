@@ -154,7 +154,7 @@ async function initializeApp() {
         res.sendFile(path.join(__dirname, 'public', 'login.html'));
     });
     
-    app.get('/painel', proteger, (req, res) => res.sendFile(path.join(__dirname, 'public', 'painel.html')));
+    app.get('/painel', proteger, (req, res) => res.sendFile(path.join(__dirname, 'public', 'painel.html')));  
 
     // ======= ROTAS API (PROTEGIDAS) =======
     // Todas as rotas API devem ser protegidas
@@ -251,11 +251,7 @@ async function initializeApp() {
     // ====================================================
 
     // Correção de erro na inicialização e ajuste para o ambiente de deploy (Render, etc.)
-    const PORT = process.env.PORT || 80; 
 
-    app.listen(PORT, () => {
-      console.log(`Servidor rodando na porta ${PORT} no modo ${process.env.NODE_ENV || 'development'}`);
-    });
 
 
     // Teste de conexão inicial ou outras operações assíncronas
@@ -269,7 +265,7 @@ async function initializeApp() {
       }
     })();
 }
-
+export default app;
 // Inicia a aplicação
 initializeApp();
 
