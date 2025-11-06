@@ -156,7 +156,11 @@ app.get('/api/listarUsuarios', async (req, res) => {
 
 export default app;
 
-// app.listen(3000, () => {
-//   console.log('Servidor rodando na porta 3000');
-// });
-// // ======= FIM DO CÓDIGO DO SERVIDOR =======
+// Remova o 'export default app;' se estiver no final.
+
+// Use a porta fornecida pelo ambiente (Render/Heroku) ou 3000 como fallback local
+const PORT = process.env.PORT || 80; 
+
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});
