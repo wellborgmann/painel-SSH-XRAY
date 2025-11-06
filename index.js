@@ -174,7 +174,4 @@ io.on("connection", (socket) => {
   });
 });
 
-// ======= INICIALIZAÇÃO =======
-httpServer.listen(PORT, () => {
-  console.log(`✅ API + Socket.IO rodando em http://localhost:${PORT}`);
-});
+module.exports = app;
