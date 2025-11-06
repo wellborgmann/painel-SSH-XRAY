@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Painel de Controle</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #1e88e5, #3949ab);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-container {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 400px;
+      padding: 40px;
+      animation: fadeIn 0.6s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .login-header h2 {
+      color: #1e88e5;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .login-header p {
+      color: #777;
+      font-size: 14px;
+    }
+
+    .form-group {
+      position: relative;
+      margin-bottom: 25px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-bottom: 2px solid #ccc;
+      outline: none;
+      transition: all 0.3s;
+      font-size: 15px;
+    }
+
+    .form-group input:focus {
+      border-color: #1e88e5;
+    }
+
+    .form-group label {
+      position: absolute;
+      left: 0;
+      top: 12px;
+      color: #999;
+      font-size: 15px;
+      transition: all 0.3s;
+      pointer-events: none;
+    }
+
+    .form-group input:focus + label,
+    .form-group input:valid + label {
+      top: -8px;
+      left: 0;
+      font-size: 13px;
+      color: #1e88e5;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #1e88e5;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 16px;
+      transition: 0.3s;
+    }
+
+    .btn:hover {
+      background: #1565c0;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      color: #888;
+      font-size: 13px;
+    }
+
+    @media (max-width: 480px) {
+      .login-container {
+        margin: 0 20px;
+        padding: 30px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-header">
+      <h2>Bem-vindo</h2>
+      <p>Faça login para acessar o painel</p>
+    </div>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <input type="text" id="email" required>
+        <label for="email">Usuário</label>
+      </div>
+
+      <div class="form-group">
+        <input type="password" id="password" required>
+        <label for="password">Senha</label>
+      </div>
+
+      <button type="submit" class="btn">Entrar</button>
+    </form>
+
+    <div class="footer">
+      © 2025 Painel de Controle - Todos os direitos reservados
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("loginForm");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (!email || !password) {
+        alert("Preencha todos os campos!");
+        return;
+      }
+
+      // Exemplo de requisição (ajuste a URL para seu backend)
+      try {
+        const res = await fetch("/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (res.ok) {
+          window.location.href = "/painel";
+        } else {
+          alert("Usuário ou senha incorretos!");
+        }
+      } catch (err) {
+        alert("Erro de conexão com o servidor.");
+      }
+    });
+  </script>
+</body>
+</html>
