@@ -156,7 +156,7 @@ app.get('/api/listarUsuarios', async (req, res) => {
 
 export default app;
 
-app.listen(3000, () => {
-  console.log('Servidor rodando na porta 3000');
-});
-// ======= FIM DO CÓDIGO DO SERVIDOR =======
+// app.listen(3000, () => {
+//   console.log('Servidor rodando na porta 3000');
+// });
+// // ======= FIM DO CÓDIGO DO SERVIDOR =======
