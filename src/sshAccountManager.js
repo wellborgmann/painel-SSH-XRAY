@@ -1,7 +1,8 @@
 const dotenv = require("dotenv");
 dotenv.config();
 const { Client } = require("ssh2");
-const { v4: uuidv4 } = require("uuid");
+const { v4: uuidv4 } = await import('uuid');
+
 const { lerJson, SalvarJson } = require("./jsonManager.js");
 
 
