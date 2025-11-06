@@ -1,16 +1,22 @@
-const { Client } = require("ssh2");
-const dotenv = require("dotenv");
+import { Client } from "ssh2";
+import dotenv from "dotenv";
+
 dotenv.config();
+
 const connSettings = {
-  host: "157.254.54.234",
-  port: 22,
-  username: "root",
-  password: "7093dado7093",
+  host: process.env.SSH_IP,
+  port: process.env.SSH_PORT,
+  username: process.env.SSH_USER,
+  password: process.env.SSH_PASSWORD,
   readyTimeout: 60000,
 };
 
 const remoteFilePath = "/usr/local/etc/xray/config.json";
 
+/**
+ * Lê e analisa o arquivo JSON remotamente via SFTP.
+ * @returns {Promise<object>} O objeto JavaScript analisado a partir do JSON remoto.
+ */
 async function lerJson() {
   return new Promise((resolve, reject) => {
     const conn = new Client();
@@ -45,10 +51,15 @@ async function lerJson() {
   });
 }
 
+/**
+ * Serializa um objeto JavaScript em JSON e o salva remotamente via SFTP.
+ * @param {object} jsonData O objeto JavaScript a ser salvo.
+ * @returns {Promise<void>} Uma Promise que resolve quando o arquivo é salvo.
+ */
 function SalvarJson(jsonData) {
   return new Promise((resolve, reject) => {
     const conn = new Client();
-    const tempFilePath = remoteFilePath;
+    const tempFilePath = remoteFilePath; // Mantém o nome da variável como no original
 
     conn.on("error", (err) => {
       conn.end();
@@ -83,7 +94,4 @@ function SalvarJson(jsonData) {
   });
 }
 
-module.exports = {
-  lerJson,
-  SalvarJson,
-};
+export { lerJson, SalvarJson };

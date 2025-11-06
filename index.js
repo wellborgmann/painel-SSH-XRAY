@@ -1,9 +1,15 @@
-const express = require('express');
-const path = require('path');
-const cors = require('cors');
-const session = require('express-session');
+import express from 'express';
+import path from 'path';
+import cors from 'cors';
+import session from 'express-session';
+import { fileURLToPath } from 'url';
+import { online, alterarData, NewUserVPN, listarUsuarios, infoLogin, removerUsuarioSSH } from './src/sshAccountManager.js';
+
+// ======= FIX PARA __dirname EM ES MODULES =======
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-const { online, alterarData, NewUserVPN, listarUsuarios, infoLogin, removerUsuarioSSH } = require("./src/sshAccountManager.js");
 
 app.use(express.json());
 app.use(cors());
@@ -33,6 +39,7 @@ function proteger(req, res, next) {
   res.status(401).sendFile(path.join(__dirname, 'public', 'login.html'));
 }
 
+// ======= ROTAS DE LOGIN =======
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password)
@@ -55,7 +62,7 @@ app.post('/logout', (req, res) => {
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
 app.get('/painel', proteger, (req, res) => res.sendFile(path.join(__dirname, 'public', 'painel.html')));
 
-// ======= ROTAS API (substituindo o Socket.IO) =======
+// ======= ROTAS API (substituindo Socket.IO) =======
 app.get('/api/online', async (req, res) => {
   try {
     const usuarios = await online();
@@ -135,4 +142,21 @@ app.get('/api/listarUsuarios', async (req, res) => {
   }
 });
 
-module.exports = app;
+
+(async () => {  // Teste de conexão inicial ou outras operações assíncronas podem ser feitas aqui
+
+   try {
+    const usuarios = await listarUsuarios();
+   console.log(JSON.stringify(usuarios, null, 2));s
+  } catch (error) {
+   console.log('Erro ao listar usuários na inicialização:', error.message);
+  }
+
+})();
+
+export default app;
+
+app.listen(3000, () => {
+  console.log('Servidor rodando na porta 3000');
+});
+// ======= FIM DO CÓDIGO DO SERVIDOR =======

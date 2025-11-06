@@ -555,205 +555,384 @@
     <div id="notificacao"></div>
 
     <script>
-document.addEventListener("DOMContentLoaded", () => {
-    feather.replace();
+    document.addEventListener("DOMContentLoaded", () => {
+        feather.replace();
 
-    const API_BASE = "/api"; // base das rotas do seu backend
-
-    // --- SELETORES GERAIS ---
-    const notificacao = document.getElementById("notificacao");
-    const tabButtons = document.querySelectorAll(".tab-button");
-    const tabContents = document.querySelectorAll(".tab-content");
-
-    // --- SELETORES DOS FORMULÁRIOS ---
-    const formCriarUsuario = document.getElementById("formCriarUsuario");
-    const formAlterarData = document.getElementById("formAlterarData");
-    const formAlterarSenha = document.getElementById("formAlterarSenha");
-    const usuarioAlterarDataInput = document.getElementById("usuarioAlterarData");
-    const usuarioAlterarSenhaInput = document.getElementById("usuarioAlterarSenha");
-
-    // --- LISTAGEM ---
-    const userListContainer = document.getElementById("userList");
-    const searchInput = document.getElementById("searchInput");
-    const btnAtualizarLista = document.getElementById("btnAtualizarLista");
-    let todosOsUsuarios = [];
-
-    // --- MODAL ---
-    const modalOverlay = document.getElementById("userDetailsModal");
-    const btnCloseModal = document.getElementById("btnCloseModal");
-    const modalUsuario = document.getElementById("modal-usuario");
-    const modalSenha = document.getElementById("modal-senha");
-    const modalExpira = document.getElementById("modal-expira");
-    const modalDias = document.getElementById("modal-dias");
-    const btnCopiarModal = document.getElementById("btnCopiarModal");
-    const btnEditarModal = document.getElementById("btnEditarModal");
-    const btnExcluirModal = document.getElementById("btnExcluirModal");
-
-    const mostrarNotificacao = (mensagem, tipo = "success") => {
-        notificacao.textContent = mensagem;
-        notificacao.className = `${tipo} show`;
-        setTimeout(() => notificacao.classList.remove("show"), 3000);
-    };
-
-    const gerarCredenciaisAleatorias = (tamanho) => {
-        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-        return Array.from({ length: tamanho }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-    };
-
-    const formatarData = (iso) => {
-        const d = new Date(iso);
-        return isNaN(d) ? "N/A" : `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${d.getUTCFullYear()}`;
-    };
-
-    const api = async (rota, dados = null, metodo = "POST") => {
-        const config = {
-            method: metodo,
-            headers: { "Content-Type": "application/json" }
-        };
-        if (dados) config.body = JSON.stringify(dados);
-        const res = await fetch(`${API_BASE}/${rota}`, config);
-        return res.json();
-    };
-
-    // --- ABAS ---
-    tabButtons.forEach(btn => {
-        btn.addEventListener("click", async () => {
-            tabButtons.forEach(b => b.classList.remove("active"));
-            tabContents.forEach(c => c.classList.remove("active"));
-            btn.classList.add("active");
-            document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
-            if (btn.dataset.tab === 'listar') await listarUsuarios();
-        });
-    });
-
-    const abrirModal = () => modalOverlay.classList.add("show");
-    const fecharModal = () => modalOverlay.classList.remove("show");
-
-    btnCloseModal.onclick = fecharModal;
-    modalOverlay.onclick = e => { if (e.target === modalOverlay) fecharModal(); };
-
-    btnCopiarModal.addEventListener("click", async () => {
-        const texto = `
-⭐ Dados de Acesso ⭐
-👤 Usuário: ${modalUsuario.textContent}
-🔑 Senha: ${modalSenha.textContent}
-📅 Expira: ${modalExpira.textContent}
-⏳ Dias restantes: ${modalDias.textContent}
-`.trim();
-        await navigator.clipboard.writeText(texto);
-        mostrarNotificacao("Copiado!");
-    });
-
-    btnEditarModal.addEventListener("click", () => {
-        usuarioAlterarDataInput.value = modalUsuario.textContent;
-        usuarioAlterarSenhaInput.value = modalUsuario.textContent;
-        fecharModal();
-        document.querySelector('[data-tab="renovar"]').click();
-    });
-
-    btnExcluirModal.addEventListener("click", async () => {
-        const usuario = modalUsuario.textContent;
-        if (confirm(`Excluir "${usuario}"?`)) {
-            const res = await api("removerUsuario", { usuario });
-            mostrarNotificacao(res.message || "Usuário removido!");
-            fecharModal();
-            listarUsuarios();
-        }
-    });
-
-    const renderizarListaUsuarios = (usuarios) => {
-        userListContainer.innerHTML = "";
-        if (!usuarios.length) return userListContainer.innerHTML = "<p>Nenhum usuário encontrado.</p>";
-        usuarios.forEach(user => {
-            const div = document.createElement("div");
-            div.className = "user-list-item";
-            div.dataset.usuario = user.username;
-            div.dataset.senha = user.password;
-            div.innerHTML = `
-                <div class="user-info-details">
-                    <strong>${user.username}</strong>
-                    <span>Senha: ${user.password}</span>
-                </div>
-                <button class="btn-details">Ver Detalhes</button>`;
-            userListContainer.appendChild(div);
-        });
-    };
-
-    const listarUsuarios = async () => {
-        const res = await api("listarUsuarios", {}, "GET");
-        todosOsUsuarios = res.usuarios || [];
-        renderizarListaUsuarios(todosOsUsuarios);
-    };
-
-    searchInput.addEventListener("input", (e) => {
-        const termo = e.target.value.toLowerCase();
-        renderizarListaUsuarios(todosOsUsuarios.filter(u => u.username.toLowerCase().includes(termo)));
-    });
-
-    userListContainer.addEventListener("click", async (e) => {
-        if (e.target.classList.contains("btn-details")) {
-            const el = e.target.closest(".user-list-item");
-            modalUsuario.textContent = el.dataset.usuario;
-            modalSenha.textContent = el.dataset.senha;
-            abrirModal();
-            const res = await api("infoLogin", { usuario: el.dataset.usuario });
-            if (res.exists && res.data) {
-                modalExpira.textContent = formatarData(res.data);
-                const diff = new Date(res.data) - new Date();
-                modalDias.textContent = Math.max(Math.ceil(diff / 86400000), 0);
-            } else {
-                modalExpira.textContent = "N/A";
-                modalDias.textContent = "N/A";
+        const API_BASE = "/api"; 
+        
+        // --- FUNÇÃO API (ADICIONADA/CORRIGIDA para REST) ---
+        const api = async (rota, dados = null, metodo = "POST") => {
+            const config = {
+                method: metodo,
+                headers: { "Content-Type": "application/json" }
+            };
+            
+            const metodoMaiusculo = metodo.toUpperCase();
+            
+            // Apenas anexa o corpo se o método não for GET ou HEAD
+            if (dados && metodoMaiusculo !== "GET" && metodoMaiusculo !== "HEAD") {
+                config.body = JSON.stringify(dados);
             }
-        }
-    });
 
-    btnAtualizarLista.addEventListener("click", listarUsuarios);
+            try {
+                const res = await fetch(`${API_BASE}/${rota}`, config);
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || `Erro HTTP: ${res.status}`);
+                }
+                return res.json();
+            } catch (error) {
+                console.error(`Erro na rota ${rota}:`, error);
+                throw error; // Propaga o erro para ser tratado no handler
+            }
+        };
 
-    // --- FORMULÁRIOS ---
-    document.getElementById("usuario").value = gerarCredenciaisAleatorias(6);
-    document.getElementById("senha").value = gerarCredenciaisAleatorias(6);
-    document.getElementById("dias").value = 30;
+        // --- SELETORES GERAIS ---
+        const notificacao = document.getElementById("notificacao");
+        const tabButtons = document.querySelectorAll(".tab-button");
+        const tabContents = document.querySelectorAll(".tab-content");
+        
+        // --- SELETORES DOS FORMULÁRIOS ---
+        const formCriarUsuario = document.getElementById("formCriarUsuario");
+        const formAlterarData = document.getElementById("formAlterarData");
+        const formAlterarSenha = document.getElementById("formAlterarSenha");
+        const usuarioAlterarDataInput = document.getElementById("usuarioAlterarData");
+        const usuarioAlterarSenhaInput = document.getElementById("usuarioAlterarSenha");
 
-    document.getElementById("btnGerarUsuario").onclick = () => {
-        document.getElementById("usuario").value = gerarCredenciaisAleatorias(6);
-    };
-    document.getElementById("btnGerarSenha").onclick = () => {
-        document.getElementById("senha").value = gerarCredenciaisAleatorias(6);
-    };
+        // --- SELETORES DA LISTAGEM ---
+        const userListContainer = document.getElementById("userList");
+        const searchInput = document.getElementById("searchInput");
+        const btnAtualizarLista = document.getElementById("btnAtualizarLista");
+        let todosOsUsuarios = []; 
+        
+        // --- SELETORES DO MODAL ---
+        const modalOverlay = document.getElementById("userDetailsModal");
+        const btnCloseModal = document.getElementById("btnCloseModal");
+        const modalUsuario = document.getElementById("modal-usuario");
+        const modalSenha = document.getElementById("modal-senha");
+        const modalExpira = document.getElementById("modal-expira");
+        const modalDias = document.getElementById("modal-dias");
+        const btnCopiarModal = document.getElementById("btnCopiarModal");
+        const btnEditarModal = document.getElementById("btnEditarModal");
+        const btnExcluirModal = document.getElementById("btnExcluirModal");
 
-    formCriarUsuario.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const usuario = document.getElementById("usuario").value;
-        const senha = document.getElementById("senha").value;
-        const dias = +document.getElementById("dias").value;
-        const res = await api("criarUsuario", { usuario, senha, dias });
-        mostrarNotificacao(res.message || "Usuário criado!");
+        // --- FUNÇÕES AUXILIARES DE FEEDBACK ---
+        const mostrarNotificacao = (mensagem, tipo = "success") => {
+            notificacao.textContent = mensagem;
+            notificacao.className = `${tipo} show`;
+            setTimeout(() => { notificacao.classList.remove('show'); }, 3000);
+        };
+        
+        const resetarFormularios = () => {
+            formCriarUsuario.reset();
+            formAlterarData.reset();
+            formAlterarSenha.reset();
+        };
+
+        const handleSuccess = (mensagem) => {
+            mostrarNotificacao(mensagem);
+            resetarFormularios();
+            listarUsuarios(); // Atualiza a lista após sucesso
+        };
+        
+        const handleErrors = (error) => {
+            const msgTexto = error.message || "Ocorreu um erro desconhecido na operação.";
+            mostrarNotificacao(msgTexto, "error");
+        };
+
+        const gerarCredenciaisAleatorias = (tamanho) => {
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            let resultado = '';
+            for (let i = 0; i < tamanho; i++) resultado += chars.charAt(Math.floor(Math.random() * chars.length));
+            return resultado;
+        };
+
+        const formatarData = (isoString) => {
+            if (!isoString) return "N/A";
+            try {
+                // Tenta criar a data. É crucial que o backend envie a data no formato ISO correto.
+                const dataObj = new Date(isoString);
+                
+                // Verifica se a data é válida
+                if (isNaN(dataObj.getTime())) return "Data inválida";
+                
+                const dia = String(dataObj.getUTCDate()).padStart(2, '0');
+                const mes = String(dataObj.getUTCMonth() + 1).padStart(2, '0');
+                const ano = dataObj.getUTCFullYear();
+                return `${dia}/${mes}/${ano}`;
+            } catch (error) {
+                console.error("Erro ao formatar data:", error);
+                return "Data inválida";
+            }
+        };
+        
+        // --- LÓGICA DAS ABAS ---
+        const selecionarAba = (nomeAba) => {
+            const abaButton = document.querySelector(`.tab-button[data-tab="${nomeAba}"]`);
+            if (abaButton) abaButton.click();
+        };
+
+        tabButtons.forEach(button => {
+            button.addEventListener("click", () => {
+                const targetTab = button.dataset.tab;
+                tabButtons.forEach(btn => btn.classList.remove("active"));
+                tabContents.forEach(content => content.classList.remove("active"));
+                button.classList.add("active");
+                document.getElementById(`tab-${targetTab}`).classList.add("active");
+                // Substitui socket.emit("listarUsuarios") por chamada REST
+                if (targetTab === 'listar') listarUsuarios(); 
+            });
+        });
+
+        // --- LÓGICA DO MODAL (Não muda, exceto a chamada de API no final) ---
+        const abrirModal = () => modalOverlay.classList.add("show");
+        const fecharModal = () => modalOverlay.classList.remove("show");
+
+        btnCloseModal.addEventListener("click", fecharModal);
+        modalOverlay.addEventListener("click", (e) => {
+            if (e.target === modalOverlay) fecharModal();
+        });
+        
+        btnCopiarModal.addEventListener("click", async () => {
+            const textoParaCopiar = `
+        ⭐ Dados de Acesso Cliente ⭐
+        -------------------------
+        👤 Usuário: ${modalUsuario.textContent}
+        🔑 Senha: ${modalSenha.textContent}
+        📅 Expira em: ${modalExpira.textContent}
+        ⏳ Dias restantes: ${modalDias.textContent}
+        -------------------------
+        `.trim();
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                try {
+                    await navigator.clipboard.writeText(textoParaCopiar);
+                    mostrarNotificacao("Dados copiados para a área de transferência!");
+                } catch (err) {
+                    mostrarNotificacao("Erro ao copiar dados.", "error");
+                }
+            } else {
+                // Fallback para navegadores mais antigos
+                // ... (seu código de fallback aqui)
+                mostrarNotificacao("Seu navegador não suporta cópia automática.", "error");
+            }
+        });
+
+
+        btnEditarModal.addEventListener("click", () => {
+            const usuario = modalUsuario.textContent;
+            usuarioAlterarDataInput.value = usuario;
+            usuarioAlterarSenhaInput.value = usuario;
+            fecharModal();
+            selecionarAba('renovar');
+            mostrarNotificacao(`Usuário "${usuario}" selecionado para edição.`);
+        });
+        
+        // --- LÓGICA DE EXCLUSÃO (Migrada para REST) ---
+        btnExcluirModal.addEventListener("click", async () => {
+            const usuario = modalUsuario.textContent;
+            if (!usuario) {
+                mostrarNotificacao("Nenhum usuário selecionado para excluir.", "error");
+                return;
+            }
+
+            if (confirm(`Tem certeza que deseja excluir o usuário "${usuario}"?\nEsta ação não pode ser desfeita.`)) {
+                try {
+                    // Substitui socket.emit("removerUsuario") por chamada REST
+                    const res = await api("removerUsuario", { usuario }, "POST");
+                    handleSuccess(res.message);
+                    fecharModal();
+                } catch (error) {
+                    handleErrors(error);
+                }
+            }
+        });
+
+        // --- LÓGICA DA LISTAGEM DE USUÁRIOS ---
+        const renderizarListaUsuarios = (usuarios) => {
+            userListContainer.innerHTML = "";
+            if (!usuarios || usuarios.length === 0) {
+                userListContainer.innerHTML = "<p>Nenhum usuário encontrado.</p>";
+                return;
+            }
+            usuarios.forEach(user => {
+                const userItem = document.createElement("div");
+                userItem.className = "user-list-item";
+                userItem.dataset.usuario = user.username;
+                userItem.dataset.senha = user.password;
+                userItem.innerHTML = `
+                    <div class="user-info-details">
+                        <strong>${user.username}</strong>
+                        <span>Senha: ${user.password}</span>
+                    </div>
+                    <button class="btn-details">Ver Detalhes</button>
+                `;
+                userListContainer.appendChild(userItem);
+            });
+        };
+        
+        // Função para Listar Usuários (Migrada para REST GET)
+        const listarUsuarios = async () => {
+             userListContainer.innerHTML = "<p>Carregando usuários...</p>";
+             try {
+                const res = await api("listarUsuarios", null, "GET");
+                // Presume-se que a rota /api/listarUsuarios retorne um objeto que contenha a lista
+                // Se a sua rota backend retorna apenas o array, você precisará ajustar aqui.
+                // Ex: se o backend retorna [user1, user2], use 'res' em vez de 'res.usuarios'
+                const usuarios = res.usuarios || res; 
+                todosOsUsuarios = usuarios;
+                renderizarListaUsuarios(usuarios);
+             } catch (error) {
+                handleErrors(error);
+                userListContainer.innerHTML = "<p>Erro ao carregar usuários.</p>";
+             }
+        };
+
+        // Função para Obter Detalhes do Login (Migrada para REST POST)
+        const obterInfoLogin = async (usuario) => {
+            try {
+                // Rota /api/infoLogin requer o usuário no corpo, então usamos POST
+                const response = await api("infoLogin", { usuario }, "POST"); 
+
+                if (response && response.exists && response.data) {
+                    const dataExpiraISO = response.data;
+                    const expiraData = new Date(dataExpiraISO);
+                    const hoje = new Date();
+
+                    const diffTime = expiraData.getTime() - hoje.getTime();
+                    const diasRestantes = diffTime > 0 ? Math.ceil(diffTime / (1000 * 60 * 60 * 24)) : 0;
+
+                    modalExpira.textContent = formatarData(dataExpiraISO);
+                    modalDias.textContent = diasRestantes;
+                } else {
+                    modalExpira.textContent = "Data não encontrada";
+                    modalDias.textContent = "N/A";
+                }
+            } catch (error) {
+                handleErrors(error);
+                modalExpira.textContent = "Erro ao carregar";
+                modalDias.textContent = "Erro";
+            }
+        };
+
+
+        searchInput.addEventListener("input", (e) => {
+            const termoBusca = e.target.value.toLowerCase();
+            const usuariosFiltrados = todosOsUsuarios.filter(user => user.username.toLowerCase().includes(termoBusca));
+            renderizarListaUsuarios(usuariosFiltrados);
+        });
+        
+        userListContainer.addEventListener("click", (e) => {
+            if (e.target.classList.contains("btn-details")) {
+                const userItem = e.target.closest(".user-list-item");
+                const { usuario, senha } = userItem.dataset;
+                
+                modalUsuario.textContent = usuario;
+                modalSenha.textContent = senha;
+                modalExpira.textContent = "Carregando...";
+                modalDias.textContent = "Carregando...";
+                
+                abrirModal();
+                obterInfoLogin(usuario); // Chama a nova função REST
+            }
+        });
+
+        btnAtualizarLista.addEventListener("click", () => {
+             mostrarNotificacao("Atualizando lista...");
+             listarUsuarios(); // Chama a nova função REST
+        });
+
+        // --- EVENT LISTENERS DOS FORMULÁRIOS (Migrados para REST) ---
+        (function preencherCamposIniciais() {
+            document.getElementById("usuario").value = gerarCredenciaisAleatorias(6);
+            document.getElementById("senha").value = gerarCredenciaisAleatorias(6);
+            document.getElementById("dias").value = 30;
+        })();
+        
+        document.getElementById("btnGerarUsuario").addEventListener("click", () => {
+            document.getElementById("usuario").value = gerarCredenciaisAleatorias(6);
+        });
+        document.getElementById("btnGerarSenha").addEventListener("click", () => {
+             document.getElementById("senha").value = gerarCredenciaisAleatorias(6);
+        });
+
+        formCriarUsuario.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const usuario = document.getElementById("usuario").value;
+            const senha = document.getElementById("senha").value;
+            const dias = parseInt(document.getElementById("dias").value, 10);
+            
+            try {
+                // Substitui socket.emit("criarUsuario") por chamada REST
+                const res = await api("criarUsuario", { usuario, senha, dias }, "POST");
+                handleSuccess(res.message || "Usuário criado com sucesso!");
+            } catch (error) {
+                handleErrors(error);
+            }
+        });
+
+        formAlterarData.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const usuario = usuarioAlterarDataInput.value;
+            const dias = parseInt(document.getElementById("diasAdicionar").value, 10);
+            
+            try {
+                // Substitui socket.emit("alterarData") por chamada REST
+                const res = await api("alterarData", { usuario, dias }, "POST");
+                handleSuccess(res.message || "Data alterada com sucesso!");
+            } catch (error) {
+                handleErrors(error);
+            }
+        });
+
+        formAlterarSenha.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const usuario = usuarioAlterarSenhaInput.value;
+            const senha = document.getElementById("novaSenha").value;
+            
+            try {
+                // Substitui socket.emit("alterarSenha") por chamada REST
+                const res = await api("alterarSenha", { usuario, senha }, "POST");
+                handleSuccess(res.message || "Senha alterada com sucesso!");
+            } catch (error) {
+                handleErrors(error);
+            }
+        });
+
+        // --- Sidebar de Usuários Online (Migrado para REST GET) ---
+        const atualizarOnline = async () => {
+            const lista = document.getElementById("listaUsuariosOnline");
+            lista.innerHTML = "<li>Atualizando...</li>";
+            try {
+                // Substitui socket.emit("getOnline") por chamada REST
+                const data = await api("online", null, "GET");
+                
+                lista.innerHTML = "";
+                
+                // Adaptação da sua lógica de consolidação de usuários online
+                const todosUsuariosOnline = [...new Set([...(data.ssh || []), ...(data.v2ray || [])].map(item => item.user || item.username))]; 
+                
+                if (todosUsuariosOnline.length > 0) {
+                    todosUsuariosOnline.forEach(user => {
+                        const li = document.createElement("li");
+                        li.textContent = user;
+                        lista.appendChild(li);
+                    });
+                } else {
+                    lista.innerHTML = "<li>Nenhum usuário online.</li>";
+                }
+            } catch (error) {
+                handleErrors(error);
+                lista.innerHTML = "<li>Erro ao carregar online.</li>";
+            }
+        };
+
+        document.getElementById("btnAtualizarOnline").addEventListener("click", atualizarOnline);
+
+        // --- Inicialização ---
+        atualizarOnline();
         listarUsuarios();
     });
-
-    formAlterarData.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const usuario = usuarioAlterarDataInput.value;
-        const dias = +document.getElementById("diasAdicionar").value;
-        const res = await api("alterarData", { usuario, dias });
-        mostrarNotificacao(res.message || "Data alterada!");
-        listarUsuarios();
-    });
-
-    formAlterarSenha.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const usuario = usuarioAlterarSenhaInput.value;
-        const senha = document.getElementById("novaSenha").value;
-        const res = await api("alterarSenha", { usuario, senha });
-        mostrarNotificacao(res.message || "Senha alterada!");
-        listarUsuarios();
-    });
-
-    // --- Inicialização ---
-    listarUsuarios();
-});
 </script>
-
 </body>
 </html>

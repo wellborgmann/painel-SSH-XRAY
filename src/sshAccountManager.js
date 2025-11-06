@@ -1,9 +1,12 @@
-const dotenv = require("dotenv");
-dotenv.config();
-const { Client } = require("ssh2");
-const { v4: uuidv4 } = await import('uuid');
+import dotenv from "dotenv";
+import { Client } from "ssh2";
+import { v4 as uuidv4 } from "uuid";
 
-const { lerJson, SalvarJson } = require("./jsonManager.js");
+// Configure o dotenv imediatamente
+dotenv.config();
+
+// Seus imports de gerenciamento de JSON
+import { lerJson, SalvarJson } from "./jsonManager.js";
 
 
 const connSettings = {
@@ -15,7 +18,7 @@ const connSettings = {
 };
 
 // Função para criar um usuário SSH no servidor
-function criarUsuario(login, senha, dias, limite) {
+export function criarUsuario(login, senha, dias, limite) {
   const comando = `
       #!/bin/bash
       username="${login}"
@@ -36,7 +39,7 @@ function criarUsuario(login, senha, dias, limite) {
 }
 
 // Função genérica para executar comandos SSH no servidor
-function executarComandoSSH(comando) {
+export function executarComandoSSH(comando) {
   return new Promise((resolve, reject) => {
     const conn = new Client();
     conn
@@ -74,15 +77,26 @@ function checkV2RayStatus() {
 
 function validarJsonV2Ray(json) {
   try {
-    JSON.parse(JSON.stringify(json));
+    // Nota: O método de validação JSON do original pode não ser o ideal, 
+    // mas foi mantido para fins de conversão.
+    JSON.parse(JSON.stringify(json)); 
     return true;
   } catch (error) {
     return false;
   }
 }
 
+// Gera um novo objeto de usuário para V2Ray
+function newV2ray(email) {
+  return {
+    id: uuidv4(),
+    level: 0,
+    email: email,
+  };
+}
+
 // Função principal para criar um novo usuário VPN (SSH e V2Ray)
-async function NewUserVPN(data) {
+export async function NewUserVPN(data) {
   console.log("Iniciando criação de usuário VPN...");
 
   try {
@@ -101,9 +115,6 @@ if (!inboundVless) {
 
 // Adiciona o novo usuário ao array
 inboundVless.settings.clients.push(newUserV2);
-
-// Salva o arquivo JSON
-
 
     
     if (!validarJsonV2Ray(arquivo)) {
@@ -133,28 +144,16 @@ inboundVless.settings.clients.push(newUserV2);
     };
   } catch (error) {
     console.error("Erro na criação de usuário VPN:", error);
-
-
-
     throw error;
   }
 }
 
-// Gera um novo objeto de usuário para V2Ray
-function newV2ray(email) {
-  return {
-    id: uuidv4(),
-    level: 0,
-    email: email,
-  };
-}
-
-function getUsers() {
+export function getUsers() {
   const command = "awk -F: '$3 >= 1000 && $3 < 65534 { print $1 }' /etc/passwd";
   return executarComandoSSH(command);
 }
 
-function alterarData(login, dias) {
+export function alterarData(login, dias) {
   let comando =
     `#!/bin/bash
   clear
@@ -174,16 +173,8 @@ function alterarData(login, dias) {
 const comando = `echo "FZpwoU:1111" | sudo chpasswd`;
 executarComandoSSH(comando);
 
-// (async () => {
-//   let data = await removerUsuarioSSH("aDQFAe");
-//   if (data.trim() == "2") {
-//     console.log("Não encontrado");
-//   } else if (data.trim() == "1") {
-//     console.log("Excluido com sucesso!");
-//   }
-// })();
 
-async function online() {
+export async function online() {
   try {
     const command = `
     #!/bin/bash
@@ -210,7 +201,9 @@ async function online() {
     echo "$json_output"
   `;
     const result = await executarComandoSSH(command);
+    // Nota: O seu comando shell está formatado para retornar um JSON
     const { ssh: sshUsersArray, v2ray: v2rayUsersArray } = JSON.parse(result);
+    
     const sshCounts = {};
     sshUsersArray.forEach((user) => {
       sshCounts[user] = (sshCounts[user] || 0) + 1;
@@ -234,7 +227,7 @@ async function online() {
     console.log(error);
   }
 }
-async function removerUsuarioSSH(username, editar) {
+export async function removerUsuarioSSH(username, editar) {
   const comandoRemoverUsuario = `
       USR_EX="${username}";
       if id "$USR_EX" &>/dev/null; then
@@ -267,9 +260,10 @@ async function removerUsuarioSSH(username, editar) {
 
 
 
-async function alterarSenha(data) {
+export async function alterarSenha(data) {
   try {
-    await removerUsuarioSSH(data.user, true);
+    // O parâmetro 'true' indica para o 'removerUsuarioSSH' não mexer no JSON do V2Ray
+    await removerUsuarioSSH(data.user, true); 
     await criarUsuario(data.user, data.pass, data.days, 1);
     return true; 
   } catch (error) {
@@ -279,7 +273,7 @@ async function alterarSenha(data) {
 }
 
 
-function infoLogin(loginName) {
+export function infoLogin(loginName) {
   return new Promise((resolve, reject) => {
     const comando = `chage -l ${loginName} | grep -E 'Account expires' | cut -d ' ' -f3-`;
     const conn = new Client();
@@ -307,7 +301,8 @@ function infoLogin(loginName) {
                 }
               }
             } else {
-              resolve({ loginName, exists: false });
+              // Assumindo que se não houver dados, o usuário não existe ou comando falhou
+              resolve({ loginName, exists: false }); 
             }
           })
           .on("data", (data) => {
@@ -326,7 +321,8 @@ function infoLogin(loginName) {
   });
 }
 
-function isExpired(obj) {
+// Nota: A função 'isExpired' estava definida, mas não era exportada ou usada no exemplo de uso
+export function isExpired(obj) {
   const now = new Date();
   if (!obj || !obj.data) return false;
   const data = obj.data instanceof Date ? obj.data : new Date(obj.data);
@@ -334,28 +330,11 @@ function isExpired(obj) {
   return data < now;
 }
 
-// (async () => {
-
-//   const result = await NewUserVPN({
-//     user: "teste123",
-//     password: "123456",
-//     days: 5,
-//     limit: 1,
-//   });
-//   console.log(result)
-//   console.log(JSON.stringify(result, null, 2));
-
-// })();
-
-
-
-
-
 /**
  * Lista todos os usuários e senhas do diretório remoto /etc/SSHPlus/senha
  * Retorna um array de objetos: [{ username, password }, ...]
  */
-async function listarUsuarios() {
+export async function listarUsuarios() {
   try {
     // Comando para ler todos os arquivos e conteúdos do diretório
     const command = `
@@ -383,21 +362,15 @@ async function listarUsuarios() {
   }
 }
 
-// Exemplo de uso
+// Bloco IIFE (Immediately Invoked Function Expression) para manter a lógica de teste original
+// Comentado para evitar a execução imediata ao importar o módulo
+/*
 (async () => {
   const usuarios = await infoLogin("apollo404");
   console.log(usuarios);
 })();
+*/
 
-
-module.exports = {
-  NewUserVPN,
-  getUsers,
-  executarComandoSSH,
-  alterarData,
-  online,
-  removerUsuarioSSH,
-  alterarSenha,
-  listarUsuarios,
-  infoLogin,
-};
+// O export default foi removido, mas você pode exportar todas as funções separadamente (o que já foi feito)
+// ou exportá-las como um objeto, se preferir.
+// O código acima exporta todas as funções que estavam no `module.exports`.
