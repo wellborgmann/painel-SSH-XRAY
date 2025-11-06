@@ -1,14 +1,13 @@
+
 # Dependências
-node_modules/
+/node_modules
 
-# Ambiente
+# Variáveis de Ambiente e Arquivos de Build
 .env
-
-# Logs
-logs/
+dist/
+/build
 *.log
 
-# Sistema
+# Arquivos de Sistema Específicos (Opcional, mas recomendado)
 .DS_Store
-Thumbs.db
-node_modules/
+npm-debug.log*
