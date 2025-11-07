@@ -3,98 +3,84 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Aumentamos o timeout para 45 segundos para maior estabilidade em ambientes serverless
 const connSettings = {
   host: process.env.SSH_IP,
-  port: process.env.SSH_PORT,
+  port: Number(process.env.SSH_PORT) || 22,
   username: process.env.SSH_USER,
   password: process.env.SSH_PASSWORD,
-  readyTimeout: 45000,          // Tempo limite para o status 'ready'
-  handshakeTimeout: 45000       // Tempo limite para o handshake inicial
+  readyTimeout: 45000,
+  handshakeTimeout: 45000,
 };
 
 const remoteFilePath = "/usr/local/etc/xray/config.json";
 
 /**
- * Lê e analisa o arquivo JSON remotamente via SFTP.
- * @returns {Promise<object>} O objeto JavaScript analisado a partir do JSON remoto.
+ * Cria e retorna uma nova conexão SSH pronta para uso.
+ * @returns {Promise<Client>}
  */
-async function lerJson() {
+function conectarSSH() {
   return new Promise((resolve, reject) => {
-    const conn = new Client(); // Nova conexão
-    
-    conn.on("error", (err) => {
-      conn.end(); // CRÍTICO: Encerra em caso de erro
-      reject(err);
-    });
+    const conn = new Client();
 
     conn
-      .on("ready", () => {
-        conn.sftp((err, sftp) => {
-          if (err) {
-            conn.end();
-            return reject(err);
-          }
-
-          sftp.readFile(remoteFilePath, "utf8", (err, data) => {
-            conn.end(); // CRÍTICO: Encerra após a leitura
-            if (err) {
-              return reject(err);
-            }
-
-            try {
-              const jsonData = JSON.parse(data);
-              resolve(jsonData);
-            } catch (parseError) {
-              reject(parseError);
-            }
-          });
-        });
+      .on("ready", () => resolve(conn))
+      .on("error", (err) => {
+        conn.end();
+        reject(new Error(`Erro na conexão SSH: ${err.message}`));
       })
       .connect(connSettings);
   });
 }
 
 /**
- * Serializa um objeto JavaScript em JSON e o salva remotamente via SFTP.
- * @param {object} jsonData O objeto JavaScript a ser salvo.
- * @returns {Promise<void>} Uma Promise que resolve quando o arquivo é salvo.
+ * Lê e retorna o conteúdo JSON remoto.
+ * @returns {Promise<object>}
  */
-function SalvarJson(jsonData) {
-  return new Promise((resolve, reject) => {
-    const conn = new Client(); // Nova conexão
-    const tempFilePath = remoteFilePath;
+export async function lerJson() {
+  const conn = await conectarSSH();
+  try {
+    const sftp = await new Promise((resolve, reject) =>
+      conn.sftp((err, sftp) => (err ? reject(err) : resolve(sftp)))
+    );
 
-    conn.on("error", (err) => {
-      conn.end(); // CRÍTICO: Encerra em caso de erro
-      reject(err);
-    });
+    const data = await new Promise((resolve, reject) =>
+      sftp.readFile(remoteFilePath, "utf8", (err, content) =>
+        err ? reject(err) : resolve(content)
+      )
+    );
 
-    conn
-      .on("ready", function () {
-        conn.sftp((err, sftp) => {
-          if (err) {
-            conn.end();
-            return reject(err);
-          }
-
-          sftp.writeFile(
-            tempFilePath,
-            JSON.stringify(jsonData, null, 2),
-            async (err) => {
-              conn.end(); // CRÍTICO: Encerra após a escrita
-              if (err) {
-                return reject(err);
-              }
-
-              console.log("Json v2 Salvo");
-              resolve();
-            }
-          );
-        });
-      })
-      .connect(connSettings);
-  });
+    return JSON.parse(data);
+  } catch (err) {
+    throw new Error(`Falha ao ler JSON remoto: ${err.message}`);
+  } finally {
+    conn.end();
+  }
 }
 
-export { lerJson, SalvarJson };
+/**
+ * Salva um objeto como JSON no servidor remoto.
+ * @param {object} jsonData - Dados a salvar.
+ * @param {boolean} [compact=false] - Define se o JSON deve ser minificado.
+ */
+export async function SalvarJson(jsonData, compact = false) {
+  const conn = await conectarSSH();
+  try {
+    const sftp = await new Promise((resolve, reject) =>
+      conn.sftp((err, sftp) => (err ? reject(err) : resolve(sftp)))
+    );
+
+    const jsonString = JSON.stringify(jsonData, null, compact ? 0 : 2);
+
+    await new Promise((resolve, reject) =>
+      sftp.writeFile(remoteFilePath, jsonString, (err) =>
+        err ? reject(err) : resolve()
+      )
+    );
+
+    console.log("✅ JSON remoto salvo com sucesso");
+  } catch (err) {
+    throw new Error(`Falha ao salvar JSON remoto: ${err.message}`);
+  } finally {
+    conn.end();
+  }
+}
