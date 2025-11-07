@@ -285,3 +285,7 @@ async function initializeApp() {
 export default app;
 // Inicia a aplicação
 initializeApp();
+
+app.listen(process.env.PORT || 3000, () => {
+  console.log(`Servidor rodando na porta ${process.env.PORT || 3000}`);
+});
