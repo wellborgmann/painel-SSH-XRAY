@@ -226,9 +226,12 @@ async function initializeApp() {
 
     app.post('/api/alterarSenha', proteger, async (req, res) => {
       try {
-        const { usuario, senha, days } = req.body;
+        console.log(req.body)
+        const { user, pass } = req.body;
         // O nome da função deve ser 'alterarSenha'
-        const result = await alterarSenha({ user: usuario, pass: senha, days });
+
+
+        const result = await alterarSenha({ user: user, pass: pass });
         res.json({ result });
       } catch (error) {
         console.error('Erro /api/alterarSenha:', error.message);
@@ -240,6 +243,7 @@ async function initializeApp() {
       try {
         const { usuario } = req.body;
         const result = await infoLogin(usuario);
+
         res.json(result);
       } catch (error) {
         console.error('Erro /api/infoLogin:', error.message);
@@ -273,16 +277,12 @@ async function initializeApp() {
     // ====================================================
 
     // Teste de conexão inicial ou outras operações assíncronas
-    (async () => {
-       try {
-        const usuarios = await listarUsuarios();
-        console.log("Lista de usuários SSH na inicialização:", JSON.stringify(usuarios, null, 2));
-      } catch (error) {
-       console.log('Erro ao listar usuários na inicialização (Verifique suas credenciais SSH):', error.message);
-      }
-    })();
+
 }
 export default app;
 // Inicia a aplicação
 initializeApp();
 
+app.listen(process.env.PORT || 3000, () => {
+  console.log(`Servidor rodando na porta ${process.env.PORT || 3000}`);
+});

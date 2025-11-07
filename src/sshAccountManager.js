@@ -93,20 +93,15 @@ export function criarUsuario(login, senha, dias, limite) {
  * @param {number} dias O novo número de dias de expiração.
  * @returns {Promise<string>} O output do comando.
  */
-export function alterarUsuarioSSH(login, senha, dias) {
+export function alterarUsuarioSSH(login, senha) {
   const comando = `
       #!/bin/bash
       username="${login}"
       password="${senha}"
-      dias="${dias}"
-      
-      # 1. Altera a data de expiração (chage -E)
-      finaldate=$(date "+%Y-%m-%d" -d "+$dias days")
-      chage -E "$finaldate" "$username"
-      
+ 
       # 2. Altera a senha (chpasswd - Operação atômica)
       # Requer permissão sudo para o usuário SSH na VPS
-      echo "${username}:${password}" | sudo chpasswd
+      echo "${login}:${senha}" | sudo chpasswd
       
       # 3. Atualiza o arquivo de senha SSHPlus
       echo "$password" > /etc/SSHPlus/senha/"$username"
@@ -226,7 +221,7 @@ export async function NewUserVPN(data) {
 export async function alterarSenha(data) {
   try {
     // Usa a modificação atômica (chage/chpasswd)
-    await alterarUsuarioSSH(data.user, data.pass, data.days);
+    await alterarUsuarioSSH(data.user, data.pass);
     
     console.log(`Senha e data alteradas para o usuário: ${data.user}`);
     return true; 
@@ -352,9 +347,9 @@ export async function removerUsuarioSSH(username, editar) {
 }
 
 
-export function infoLogin(loginName) {
+export function infoLogin(username) {
   return new Promise((resolve, reject) => {
-    const comando = `chage -l ${loginName} | grep -E 'Account expires' | cut -d ' ' -f3-`;
+    const comando = `chage -l ${username} | grep -E 'Account expires' | cut -d ' ' -f3-`;
     const conn = new Client(); 
     let dataReceived = "";
     
@@ -376,17 +371,17 @@ export function infoLogin(loginName) {
               if (dataReceived) {
                 const trimmedData = dataReceived.trim();
                 if (trimmedData === "never") {
-                  resolve({ loginName, exists: true, data: null });
+                  resolve({ username, exists: true, data: null });
                 } else {
                   const expirationDate = new Date(trimmedData);
                   if (isNaN(expirationDate)) {
                     reject(new Error("Data de expiração inválida recebida"));
                   } else {
-                    resolve({ loginName, exists: true, data: expirationDate });
+                    resolve({ username, exists: true, data: expirationDate });
                   }
                 }
               } else {
-                resolve({ loginName, exists: false }); 
+                resolve({ username, exists: false }); 
               }
             })
             .on("data", (data) => {

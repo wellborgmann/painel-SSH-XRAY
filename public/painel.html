@@ -889,20 +889,29 @@
                 handleErrors(error);
             }
         });
+// Localize este trecho no seu <script> (aproximadamente linha 900)
+formAlterarSenha.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+        const usuario = document.getElementById("usuarioAlterarSenha").value;
+        const novaSenha = document.getElementById("novaSenha").value;
+        
+        // CORREÇÃO:
+        // Use 'user' para o nome de usuário, 'pass' para a senha, 
+        // e adicione 'days' (o backend espera os 3, mesmo que 'days' seja fixo).
+        const dadosParaEnviar = { 
+            user: usuario, 
+            pass: novaSenha, 
+           
+        };
 
-        formAlterarSenha.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const usuario = usuarioAlterarSenhaInput.value;
-            const senha = document.getElementById("novaSenha").value;
-            
-            try {
-                // Substitui socket.emit("alterarSenha") por chamada REST
-                const res = await api("alterarSenha", { usuario, senha }, "POST");
-                handleSuccess(res.message || "Senha alterada com sucesso!");
-            } catch (error) {
-                handleErrors(error);
-            }
-        });
+        const res = await api("alterarSenha", dadosParaEnviar, "POST");
+        handleSuccess("Senha alterada com sucesso!");
+
+    } catch (error) {
+        handleErrors(error);
+    }
+});
 
         // --- Sidebar de Usuários Online (Migrado para REST GET) ---
         const atualizarOnline = async () => {
