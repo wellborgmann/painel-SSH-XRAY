@@ -1140,6 +1140,16 @@
         document.getElementById("btnGerarUsuario").addEventListener("click", () => document.getElementById("usuario").value = gerarCredenciaisAleatorias(6));
         document.getElementById("btnGerarSenha").addEventListener("click", () => document.getElementById("senha").value = gerarCredenciaisAleatorias(6));
 
+      document.body.addEventListener("click", (e) => {
+    if (sidebar.classList.contains('is-open')) {
+        
+        if (!sidebar.contains(e.target) && e.target !== sidebar) {
+            
+            // 3. Fecha o sidebar
+            sidebar.classList.remove('is-open');
+        }
+    }
+});
         (async () => {
             preencherCamposIniciais();
             await atualizarOnline();
