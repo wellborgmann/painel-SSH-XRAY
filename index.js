@@ -5,7 +5,6 @@ import session from 'express-session';
 import { fileURLToPath } from 'url';
 
 // --- Dependências para Sessão Persistente (Redis) ---
-// CORREÇÃO: Usaremos require para carregar o módulo CommonJS connect-redis de forma confiável.
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url); 
 
@@ -29,6 +28,9 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// CORREÇÃO CRÍTICA PARA DEPLOY EM PROXY (Vercel, Render)
+app.set('trust proxy', 1); // Confia no proxy para ler headers e cookies HTTPS
+
 app.use(express.json());
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -51,15 +53,9 @@ let redisStore;
 try {
     const RedisStoreFactory = require('connect-redis');
     
-    // CORREÇÃO: Trata a exportação CJS/ESM do connect-redis.
-    // O pacote exporta uma função factory que deve ser chamada passando 'session'
-    // para obter o construtor do Store.
-    // 
-    // Usamos (RedisStoreFactory.default || RedisStoreFactory) para pegar a função factory correta,
-    // e então a chamamos imediatamente com (session) para obter o construtor (RedisStoreConstructor).
+    // CORREÇÃO: Trata a exportação CJS/ESM do connect-redis (Resolve "ConnectRedisStore não é uma função").
     const RedisStoreConstructor = (RedisStoreFactory.default || RedisStoreFactory)(session); 
 
-    // Verificação de segurança final: se não for uma função, lançamos um erro de tipagem.
     if (typeof RedisStoreConstructor !== 'function') {
         throw new TypeError("ConnectRedisStore não é uma função construtora. Problema de exportação do pacote.");
     }
@@ -79,10 +75,9 @@ try {
 // Função de Inicialização Principal (Async para await redisClient.connect())
 async function initializeApp() {
 
-    // Se o RedisStore foi configurado com sucesso (sem erro de importação), tentamos conectar.
+    // Tenta conectar ao Redis
     if (redisStore) {
         try {
-            // A conexão é assíncrona e OBRIGATÓRIA antes de usar o Store.
             await redisClient.connect(); 
             console.log("Conexão Redis estabelecida com sucesso.");
         } catch (error) {
@@ -95,12 +90,14 @@ async function initializeApp() {
     // 3. Aplicar ao Express
     app.use(session({
       store: redisStore, // Usa Redis se configurado e conectado, ou MemoryStore se falhar
-      secret: process.env.SESSION_SECRET || 'segredo-super-seguro-padrao', // Usar env é OBRIGATÓRIO
+      secret: process.env.SESSION_SECRET || 'segredo-super-seguro-padrao', // OBRIGATÓRIO EM PROD
       resave: false,
       saveUninitialized: false,
       cookie: { 
         maxAge: 1000 * 60 * 60, // 1 hora
-        secure: process.env.NODE_ENV === 'production' // true apenas se estiver rodando em HTTPS (produção)
+        secure: process.env.NODE_ENV === 'production', // ESSENCIAL: true na Vercel (HTTPS)
+        httpOnly: true, // Boa prática de segurança
+        sameSite: 'lax' // Boa prática para evitar problemas de cross-site, sem ser muito restritivo
       }
     }));
 
@@ -117,9 +114,16 @@ async function initializeApp() {
       });
     }
 
+    // Função para proteger as rotas
     function proteger(req, res, next) {
       if (req.session && req.session.authenticated) return next();
-      // Garante que o usuário seja redirecionado para o login se não estiver autenticado
+      
+      // Resposta 401 para API calls
+      if (req.path.startsWith('/api/')) {
+        return res.status(401).json({ error: "Sessão expirada ou não autorizado." });
+      }
+
+      // Redireciona para o login para requests de páginas
       res.status(401).sendFile(path.join(__dirname, 'public', 'login.html'));
     }
 
@@ -132,8 +136,16 @@ async function initializeApp() {
       try {
         await logar(email, password);
         req.session.authenticated = true;
-        res.json({ success: true });
+        // Salva a sessão forçadamente após a autenticação
+        req.session.save((err) => {
+            if (err) {
+                console.error("Erro ao salvar sessão:", err);
+                return res.status(500).json({ error: "Falha interna ao criar sessão." });
+            }
+            res.json({ success: true });
+        });
       } catch (err) {
+        // Este é o 401 que você estava vendo se as credenciais fossem inválidas
         res.status(401).json({ error: "Credenciais inválidas." });
       }
     });
