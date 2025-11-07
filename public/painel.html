@@ -613,6 +613,8 @@
                     </div>
                     <button id="btnAtualizarLista" class="btn-refresh" title="Atualizar lista"><i data-feather="refresh-cw"></i></button>
                 </div>
+            
+                <h2 class="section-title" id="totalUsuarios">0</h2>
                 <div id="userList" class="user-list-container">
                     <!-- Conteúdo dinâmico -->
                 </div>
@@ -797,6 +799,8 @@
                 userListContainer.appendChild(userItem);
             });
             feather.replace(); // Re-renderiza os ícones
+
+            document.getElementById("totalUsuarios").textContent = `Usuários [${usuarios.length}]`;
         };
         
         const listarUsuarios = async () => {
@@ -961,6 +965,8 @@
                         li.textContent = user;
                         lista.appendChild(li);
                     });
+
+                    document.querySelector(".sidebar-header > h2").textContent = `Usuários Online [${todosUsuariosOnline.length}]`;       
                 } else {
                     lista.innerHTML = "<li>Nenhum usuário online.</li>";
                 }
