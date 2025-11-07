@@ -3,31 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Gerenciamento Pro</title>
-<link rel="icon" type="image/png" href="/favicon.png">
+    <title>Painel de Gerenciamento [Matrix Edition]</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    
     <!-- Dependências -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/feather-icons"></script>
 
-
     <style>
-        /* --- RESET E VARIÁVEIS GLOBAIS --- */
+        /* --- RESET E VARIÁVEIS GLOBAIS (TEMA MATRIX) --- */
         :root {
-            --bg-color: #f8f9fe;
-            --sidebar-bg: #ffffff;
-            --panel-bg: #ffffff;
-            --primary-color: #5e72e4; 
-            --primary-color-dark: #324cdd;
-            --primary-color-light: rgba(94, 114, 228, 0.1);
-            --font-color: #32325d;
-            --font-color-light: #8898aa;
-            --border-color: #dee2e6;
-            --success-color: #2dce89;
+            --bg-color: #0d0d0d;
+            --panel-bg: #1a1a1a;
+            --sidebar-bg: #161616;
+            --primary-green: #00ff7f; /* Verde Matrix */
+            --light-green: #39ff14;
+            --font-color: #e0e0e0;
+            --font-color-dark: #8898aa;
+            --border-color: rgba(0, 255, 127, 0.2);
+            --border-color-hover: rgba(0, 255, 127, 0.6);
+            --glow-effect: 0 0 8px rgba(0, 255, 127, 0.2), 0 0 16px rgba(0, 255, 127, 0.1);
             --error-color: #f5365c;
-            --shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
-            --border-radius: 12px;
+            --success-color: #2dce89;
+            --warning-color: #fb6340;
+            --border-radius: 8px;
             --transition-speed: 0.3s;
         }
 
@@ -37,11 +38,61 @@
             box-sizing: border-box;
         }
 
+        /* EFEITO SCANLINE SUTIL */
+        body::after {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(0deg, transparent 50%, rgba(0,0,0,0.3) 50%);
+            background-size: 100% 4px;
+            z-index: -1;
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Source Code Pro', monospace;
             background-color: var(--bg-color);
             color: var(--font-color);
             line-height: 1.6;
+            font-size: 16px;
+        }
+
+        /* --- LOADER GLOBAL --- */
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(13, 13, 13, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .loader-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 5px solid var(--border-color);
+            border-top-color: var(--primary-green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         /* --- LAYOUT PRINCIPAL --- */
@@ -55,31 +106,40 @@
             padding: 40px;
             display: flex;
             flex-direction: column;
+            align-items: center; /* Centraliza os painéis */
+            gap: 30px; /* Espaço entre os painéis */
         }
 
         /* --- CABEÇALHO --- */
         header {
-            margin-bottom: 40px;
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 10px;
+            text-shadow: var(--glow-effect);
+            text-align: center;
         }
 
         header h1 {
-            font-size: 2.2rem;
-            font-weight: 600;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-green);
         }
 
         header p {
-            color: var(--font-color-light);
+            color: var(--font-color-dark);
             font-size: 1rem;
         }
 
         /* --- SIDEBAR (USUÁRIOS ONLINE) --- */
         .sidebar {
             width: 300px;
+            flex-shrink: 0;
             background-color: var(--sidebar-bg);
             padding: 25px;
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
+            transition: all var(--transition-speed) ease;
         }
 
         .sidebar-header {
@@ -89,6 +149,7 @@
             margin-bottom: 20px;
             padding-bottom: 20px;
             border-bottom: 1px solid var(--border-color);
+            color: var(--primary-green);
         }
 
         .sidebar-header h2 {
@@ -101,19 +162,21 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            background-color: var(--bg-color);
+            background-color: transparent;
             border: 1px solid var(--border-color);
-            padding: 10px;
-            border-radius: 8px;
+            color: var(--font-color);
+            padding: 12px;
+            border-radius: var(--border-radius);
             cursor: pointer;
             transition: all var(--transition-speed) ease;
             margin-bottom: 20px;
             font-weight: 500;
         }
         .btn-refresh:hover {
-            background-color: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
+            background-color: var(--primary-green);
+            color: var(--bg-color);
+            border-color: var(--primary-green);
+            box-shadow: var(--glow-effect);
         }
 
         #listaUsuariosOnline {
@@ -123,62 +186,41 @@
         }
         #listaUsuariosOnline li {
             padding: 10px 15px;
-            border-radius: 8px;
+            border-radius: var(--border-radius);
             margin-bottom: 8px;
-            background-color: var(--bg-color);
+            background-color: var(--panel-bg);
             border: 1px solid var(--border-color);
             font-size: 0.95rem;
             font-weight: 500;
+            transition: all var(--transition-speed) ease;
+            word-break: break-all;
+        }
+        #listaUsuariosOnline li:hover {
+            transform: translateX(5px);
+            border-left: 3px solid var(--primary-green);
         }
         
-        /* --- PAINEL DE GERENCIAMENTO --- */
+        /* --- PAINEL DE GERENCIAMENTO UNIFICADO --- */
         .management-panel {
             background-color: var(--panel-bg);
             border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--glow-effect);
             width: 100%;
-            max-width: 800px; 
+            max-width: 900px; 
+            padding: 40px;
         }
-
-        .tabs {
-            display: flex;
-            background-color: var(--bg-color);
-        }
-
-        .tab-button {
-            flex: 1;
-            padding: 18px;
-            border: none;
-            background-color: transparent;
-            cursor: pointer;
-            font-size: 1rem;
+        
+        .section-title {
+            font-size: 1.5rem;
             font-weight: 600;
-            color: var(--font-color-light);
+            color: var(--primary-green);
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
-            border-bottom: 3px solid transparent;
-            transition: all var(--transition-speed) ease;
-            white-space: nowrap;
-        }
-        .tab-button.active, .tab-button:hover {
-            color: var(--primary-color);
-            background-color: white;
-            border-bottom-color: var(--primary-color);
-        }
-
-        .tab-content {
-            display: none;
-            padding: 30px 40px;
-            animation: fadeIn 0.5s ease;
-        }
-        .tab-content.active { display: block; }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            gap: 12px;
         }
 
         /* --- FORMULÁRIOS E INPUTS --- */
@@ -192,9 +234,11 @@
             width: 100%;
             padding: 14px 14px 14px 50px; 
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: var(--border-radius);
             font-size: 1rem;
+            font-family: 'Source Code Pro', monospace;
             background-color: var(--bg-color);
+            color: var(--font-color);
             transition: all var(--transition-speed) ease;
         }
         .input-group .icon {
@@ -202,61 +246,67 @@
             left: 18px;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--font-color-light);
+            color: var(--font-color-dark);
+            transition: all var(--transition-speed) ease;
         }
         .input-group input:focus {
             outline: none;
-            border-color: var(--primary-color);
-            background-color: white;
+            border-color: var(--primary-green);
+            background-color: var(--panel-bg);
+            box-shadow: var(--glow-effect);
         }
         .input-group input:focus ~ .icon {
-            color: var(--primary-color);
+            color: var(--primary-green);
         }
 
         .btn-generate {
             margin-left: 12px;
-            background: none;
+            background: transparent;
             border: 1px solid var(--border-color);
+            color: var(--font-color);
             padding: 10px 14px;
-            border-radius: 8px;
+            border-radius: var(--border-radius);
             cursor: pointer;
             transition: all var(--transition-speed) ease;
         }
         .btn-generate:hover {
-            background-color: var(--primary-color);
-            color: white;
+            background-color: var(--primary-green);
+            color: var(--bg-color);
+            border-color: var(--primary-green);
         }
 
         .btn-submit {
             width: 100%;
-            padding: 8px;
-            background-image: linear-gradient(310deg, var(--primary-color-dark), var(--primary-color));
-            color: white;
-            border: none;
-            border-radius: 8px;
+            padding: 15px;
+            background: transparent;
+            border: 1px solid var(--primary-green);
+            color: var(--primary-green);
+            border-radius: var(--border-radius);
             font-size: 1rem;
             font-weight: 600;
+            font-family: 'Source Code Pro', monospace;
             cursor: pointer;
             transition: all var(--transition-speed) ease;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
         }
         .btn-submit:hover {
+            background-color: var(--primary-green);
+            color: var(--bg-color);
+            box-shadow: var(--glow-effect);
             transform: translateY(-2px);
-            box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
         }
         
-        /* --- ESTILOS DA ABA DE LISTAGEM --- */
+        /* --- ESTILOS DA LISTAGEM DE USUÁRIOS --- */
         .search-container {
             display: flex;
             gap: 10px;
             margin-bottom: 25px;
         }
         .user-list-container {
-            max-height: 400px;
+            max-height: 450px;
             overflow-y: auto;
             padding-right: 10px;
         }
@@ -265,39 +315,32 @@
             grid-template-columns: 1fr auto;
             gap: 15px;
             align-items: center;
-            background-color: var(--bg-color);
+            background-color: transparent;
             border: 1px solid var(--border-color);
             padding: 15px;
-            border-radius: 8px;
+            border-radius: var(--border-radius);
             margin-bottom: 12px;
+            transition: all var(--transition-speed) ease;
+            cursor: pointer;
+        }
+        .user-list-item:hover {
+            border-color: var(--border-color-hover);
+            background-color: rgba(0, 255, 127, 0.05);
         }
         .user-info-details {
             overflow: hidden;
         }
         .user-info-details strong {
             font-weight: 600;
+            color: var(--primary-green);
         }
         .user-info-details span {
             font-size: 0.9rem;
-            color: var(--font-color-light);
+            color: var(--font-color-dark);
             word-wrap: break-word;
             display: block;
         }
-        .btn-details {
-            background-color: var(--primary-color-light);
-            color: var(--primary-color);
-            border: 1px solid var(--primary-color);
-            padding: 8px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all var(--transition-speed) ease;
-        }
-        .btn-details:hover {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
+        
         /* --- ESTILOS DO MODAL --- */
         .modal-overlay {
             position: fixed;
@@ -305,7 +348,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.6);
+            background-color: rgba(13, 13, 13, 0.7);
+            backdrop-filter: blur(5px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -320,10 +364,11 @@
         }
         .modal {
             background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--glow-effect);
             border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
             width: 90%;
-            max-width: 500px;
+            max-width: 550px;
             transform: scale(0.95);
             transition: transform 0.3s ease;
         }
@@ -339,33 +384,131 @@
         }
         .modal-header h3 {
             font-size: 1.3rem;
+            color: var(--primary-green);
+            word-break: break-all;
         }
         .btn-close-modal {
             background: none;
             border: none;
             cursor: pointer;
             padding: 5px;
+            color: var(--font-color-dark);
+            transition: color 0.3s ease;
         }
+        .btn-close-modal:hover { color: var(--primary-green); }
+        
         .modal-body {
             padding: 30px 25px;
-            display: grid;
+            display: flex;
+            flex-direction: column;
             gap: 20px;
         }
+        .date-management {
+            background: var(--bg-color);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .date-management label {
+            display: block;
+            color: var(--font-color-dark);
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+        .date-management .current-date {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--primary-green);
+            display: block;
+        }
+        .custom-date-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .custom-date-group input {
+            flex-grow: 1;
+            padding: 12px;
+            /* Reutilizando estilos dos inputs globais */
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-family: 'Source Code Pro', monospace;
+            background-color: var(--panel-bg);
+            color: var(--font-color);
+            transition: all var(--transition-speed) ease;
+        }
+        .custom-date-group input:focus {
+             outline: none;
+            border-color: var(--primary-green);
+        }
+        .custom-date-group button {
+            padding: 12px 15px;
+            /* Reutilizando estilos de botões */
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--font-color);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            white-space: nowrap;
+        }
+         .custom-date-group button:hover {
+            background-color: var(--primary-green);
+            color: var(--bg-color);
+            border-color: var(--primary-green);
+        }
+
+
+        #btnAdicionar30Dias {
+            width: 100%;
+            border-color: var(--warning-color);
+            color: var(--warning-color);
+        }
+        #btnAdicionar30Dias:hover {
+            background-color: var(--warning-color);
+            border-color: var(--warning-color);
+            color: var(--bg-color);
+        }
+
+
         .modal-footer {
             padding: 20px 25px;
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 15px;
-            background: var(--bg-color);
+            /* background: var(--bg-color); -> REMOVIDO PARA COR ÚNICA */
             border-top: 1px solid var(--border-color);
-                flex-direction: row;
-    position: relative;
-    overflow: hidden;
-    justify-content: center;
-    width: 100%;
         }
-        .btn-modal {
-            flex: 1;
+        .btn-modal { width: 100%; }
+
+        /* Customização dos botões do modal */
+        #btnAlterarSenhaModal {
+            border-color: var(--success-color);
+            color: var(--success-color);
         }
+        #btnAlterarSenhaModal:hover {
+            background-color: var(--success-color);
+            color: var(--bg-color);
+            border-color: var(--success-color);
+        }
+        #btnRemoverModal {
+            border-color: var(--error-color);
+            color: var(--error-color);
+        }
+        #btnRemoverModal:hover {
+            background-color: var(--error-color);
+            color: #fff;
+            border-color: var(--error-color);
+        }
+        #btnCopiarModal {
+            grid-column: 1 / -1; /* Ocupa a linha inteira */
+        }
+
 
         /* --- NOTIFICAÇÃO TOAST --- */
         #notificacao {
@@ -374,10 +517,12 @@
             left: 50%;
             transform: translateX(-50%);
             padding: 15px 25px;
-            border-radius: 8px;
-            color: #fff;
-            font-weight: 500;
-            box-shadow: var(--shadow);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            color: var(--bg-color);
+            font-weight: 600;
+            font-family: 'Source Code Pro', monospace;
+            box-shadow: var(--glow-effect);
             opacity: 0;
             visibility: hidden;
             transition: all 0.4s ease;
@@ -388,34 +533,35 @@
             visibility: visible;
             transform: translate(-50%, -10px);
         }
-        #notificacao.success { background-color: var(--success-color); }
-        #notificacao.error { background-color: var(--error-color); }
+        #notificacao.success { background-color: var(--success-color); border-color: var(--success-color); }
+        #notificacao.error { background-color: var(--error-color); border-color: var(--error-color); }
 
         /* --- RESPONSIVIDADE --- */
-        @media (max-width: 992px) {
+        @media (max-width: 1200px) {
             .main-container { flex-direction: column; }
             .sidebar { width: 100%; max-height: 40vh; border-right: none; border-bottom: 1px solid var(--border-color); }
-            .content { padding: 20px; }
-            .management-panel, #user-created-card-container { max-width: 100%; }
+            .content { padding: 25px; gap: 25px; }
         }
 
         @media (max-width: 768px) {
-            header h1 { font-size: 1.8rem; }
-            .tabs {
-                overflow-x: auto;
-            }
-            .tab-button { flex: 0 0 auto; padding: 15px 20px; }
-            .tab-content { padding: 20px; }
+            header h1 { font-size: 2rem; }
+            .management-panel { padding: 25px; }
+            .modal-footer { grid-template-columns: 1fr; }
+            #btnCopiarModal { grid-column: auto; }
         }
     </style>
 </head>
 <body>
 
+    <div id="loader" class="loader-overlay">
+        <div class="loader"></div>
+    </div>
+
     <div class="main-container">
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <i data-feather="users"></i>
+                <i data-feather="rss"></i>
                 <h2>Usuários Online</h2>
             </div>
             <button id="btnAtualizarOnline" class="btn-refresh">
@@ -423,7 +569,7 @@
                 <span>Atualizar</span>
             </button>
             <ul id="listaUsuariosOnline">
-                <li>Carregando...</li>
+                <!-- Conteúdo dinâmico -->
             </ul>
         </aside>
 
@@ -431,126 +577,77 @@
         <main class="content">
             <header>
                 <h1>Painel de Gerenciamento</h1>
-                <p>Crie e gerencie usuários de forma simples e eficiente.</p>
+                <p>Crie e gerencie usuários com eficiência e estilo.</p>
             </header>
 
+            <!-- Painel de Criação de Usuário -->
             <div class="management-panel">
-                <!-- Abas -->
-                <nav class="tabs">
-                    <button class="tab-button active" data-tab="criar"><i data-feather="user-plus"></i><span>Criar Usuário</span></button>
-                    <button class="tab-button" data-tab="listar"><i data-feather="list"></i><span>Listar Usuários</span></button>
-                    <button class="tab-button" data-tab="renovar"><i data-feather="calendar"></i><span>Renovar Acesso</span></button>
-                    <button class="tab-button" data-tab="senha"><i data-feather="lock"></i><span>Alterar Senha</span></button>
-                </nav>
-
-                <!-- Conteúdo das Abas -->
-                <div class="tab-content active" id="tab-criar">
-                    <form id="formCriarUsuario">
-                        <div class="input-group">
-                            <i class="icon" data-feather="user"></i>
-                            <input type="text" id="usuario" placeholder="Nome do usuário" required>
-                            <button type="button" class="btn-generate" id="btnGerarUsuario" title="Gerar novo usuário"><i data-feather="shuffle"></i></button>
-                        </div>
-                        <div class="input-group">
-                            <i class="icon" data-feather="key"></i>
-                            <input type="text" id="senha" placeholder="Senha" required>
-                            <button type="button" class="btn-generate" id="btnGerarSenha" title="Gerar nova senha"><i data-feather="shuffle"></i></button>
-                        </div>
-                        <div class="input-group">
-                             <i class="icon" data-feather="clock"></i>
-                            <input type="number" id="dias" placeholder="Duração em dias" min="1" required>
-                        </div>
-                        <button type="submit" class="btn-submit"><i data-feather="plus-circle"></i><span>Criar Usuário</span></button>
-                    </form>
-                </div>
-
-                <div class="tab-content" id="tab-listar">
-                    <div class="search-container">
-                        <div class="input-group" style="margin-bottom: 0;">
-                            <i class="icon" data-feather="search"></i>
-                            <input type="text" id="searchInput" placeholder="Pesquisar por usuário...">
-                        </div>
-                        <button id="btnAtualizarLista" class="btn-refresh" title="Atualizar lista"><i data-feather="refresh-cw"></i></button>
+                <h2 class="section-title"><i data-feather="user-plus"></i>Criar Novo Usuário</h2>
+                <form id="formCriarUsuario">
+                    <div class="input-group">
+                        <i class="icon" data-feather="user"></i>
+                        <input type="text" id="usuario" placeholder="Nome do usuário" required>
+                        <button type="button" class="btn-generate" id="btnGerarUsuario" title="Gerar novo usuário"><i data-feather="shuffle"></i></button>
                     </div>
-                    <div id="userList" class="user-list-container">
-                        <p>Carregando usuários...</p>
+                    <div class="input-group">
+                        <i class="icon" data-feather="key"></i>
+                        <input type="text" id="senha" placeholder="Senha" required>
+                        <button type="button" class="btn-generate" id="btnGerarSenha" title="Gerar nova senha"><i data-feather="shuffle"></i></button>
                     </div>
-                </div>
+                    <div class="input-group">
+                         <i class="icon" data-feather="clock"></i>
+                        <input type="number" id="dias" placeholder="Duração em dias (padrão: 30)" min="1" required>
+                    </div>
+                    <button type="submit" class="btn-submit"><i data-feather="plus-circle"></i><span>Criar Usuário</span></button>
+                </form>
+            </div>
 
-                <div class="tab-content" id="tab-renovar">
-                    <form id="formAlterarData">
-                        <div class="input-group">
-                             <i class="icon" data-feather="user"></i>
-                            <input type="text" id="usuarioAlterarData" placeholder="Nome do usuário" required>
-                        </div>
-                        <div class="input-group">
-                            <i class="icon" data-feather="plus"></i>
-                            <input type="number" id="diasAdicionar" placeholder="Adicionar mais dias" min="1" required>
-                        </div>
-                        <button type="submit" class="btn-submit"><i data-feather="check-circle"></i><span>Renovar Acesso</span></button>
-                    </form>
+            <!-- Painel da Lista de Usuários -->
+            <div class="management-panel">
+                <h2 class="section-title"><i data-feather="list"></i>Lista de Usuários</h2>
+                <div class="search-container">
+                    <div class="input-group" style="margin-bottom: 0; flex-grow: 1;">
+                        <i class="icon" data-feather="search"></i>
+                        <input type="text" id="searchInput" placeholder="Pesquisar por usuário...">
+                    </div>
+                    <button id="btnAtualizarLista" class="btn-refresh" title="Atualizar lista"><i data-feather="refresh-cw"></i></button>
                 </div>
-
-                <div class="tab-content" id="tab-senha">
-                    <form id="formAlterarSenha">
-                        <div class="input-group">
-                             <i class="icon" data-feather="user"></i>
-                             <input type="text" id="usuarioAlterarSenha" placeholder="Nome do usuário" required>
-                        </div>
-                        <div class="input-group">
-                             <i class="icon" data-feather="lock"></i>
-                            <input type="text" id="novaSenha" placeholder="Nova senha" required>
-                        </div>
-                        <button type="submit" class="btn-submit"><i data-feather="save"></i><span>Alterar Senha</span></button>
-                    </form>
+                <div id="userList" class="user-list-container">
+                    <!-- Conteúdo dinâmico -->
                 </div>
             </div>
+
         </main>
     </div>
 
-    <!-- Modal de Detalhes do Usuário -->
-    <div id="userDetailsModal" class="modal-overlay">
+    <!-- Modal de Edição do Usuário -->
+    <div id="editUserModal" class="modal-overlay">
         <div class="modal">
             <div class="modal-header">
-                <h3>Detalhes do Usuário</h3>
+                <h3 id="modal-username-title">Editando Usuário</h3>
                 <button id="btnCloseModal" class="btn-close-modal" title="Fechar"><i data-feather="x"></i></button>
             </div>
             <div class="modal-body">
-                <div class="info-item">
-                    <i data-feather="user"></i>
+                <div class="date-management">
                     <div>
-                        <label>Usuário</label>
-                        <span id="modal-usuario"></span>
+                        <label>Expira em / Dias Restantes</label>
+                        <span id="modal-expiracao" class="current-date">--/--/---- (-- dias)</span>
                     </div>
-                </div>
-                <div class="info-item">
-                    <i data-feather="key"></i>
-                    <div>
-                        <label>Senha</label>
-                        <span id="modal-senha"></span>
+                    
+                    <div class="custom-date-group">
+                        <input type="number" id="diasAdicionarInput" placeholder="Ex: 15" min="1">
+                        <button id="btnAdicionarDiasCustom">Adicionar</button>
                     </div>
-                </div>
-                <div class="info-item">
-                    <i data-feather="calendar"></i>
-                    <div>
-                        <label>Expira em</label>
-                        <span id="modal-expira"></span>
-                    </div>
-                </div>
 
-                 <div class="info-item">
-                    <i data-feather="calendar"></i>
-                    <div>
-                        <label>Dias Restantes</label>
-                        <span id="modal-dias"></span>
-                    </div>
+                    <button id="btnAdicionar30Dias" class="btn-submit btn-modal">
+                        <i data-feather="plus"></i><span>+ 30 Dias</span>
+                    </button>
                 </div>
             </div>
             <div class="modal-footer">
                 <button id="btnCopiarModal" class="btn-submit btn-modal"><i data-feather="copy"></i><span>Copiar Dados</span></button>
-                <button id="btnEditarModal" class="btn-submit btn-modal" style="background-image: linear-gradient(310deg, #1d9e68, var(--success-color));"><i data-feather="edit"></i><span>Editar</span></button>
-                <!-- BOTÃO DE EXCLUIR ADICIONADO -->
-                <button id="btnExcluirModal" class="btn-submit btn-modal" style="background-image: linear-gradient(310deg, #d63352, var(--error-color));"><i data-feather="trash-2"></i><span>Excluir</span></button>
+                <button id="btnAlterarSenhaModal" class="btn-submit btn-modal"><i data-feather="lock"></i><span>Alterar Senha</span></button>
+                <button id="btnRemoverModal" class="btn-submit btn-modal"><i data-feather="trash-2"></i><span>Remover</span></button>
             </div>
         </div>
     </div>
@@ -564,9 +661,10 @@
         feather.replace();
 
         const API_BASE = "/api"; 
+        let currentUserData = null; // Armazena dados do usuário selecionado no modal
         
-        // --- FUNÇÃO API (ADICIONADA/CORRIGIDA para REST) ---
         const api = async (rota, dados = null, metodo = "POST") => {
+            document.getElementById('loader').classList.add('show');
             const config = {
                 method: metodo,
                 headers: { "Content-Type": "application/json" }
@@ -574,7 +672,6 @@
             
             const metodoMaiusculo = metodo.toUpperCase();
             
-            // Apenas anexa o corpo se o método não for GET ou HEAD
             if (dados && metodoMaiusculo !== "GET" && metodoMaiusculo !== "HEAD") {
                 config.body = JSON.stringify(dados);
             }
@@ -588,22 +685,16 @@
                 return res.json();
             } catch (error) {
                 console.error(`Erro na rota ${rota}:`, error);
-                throw error; // Propaga o erro para ser tratado no handler
+                throw error;
+            } finally {
+                document.getElementById('loader').classList.remove('show');
             }
         };
 
         // --- SELETORES GERAIS ---
         const notificacao = document.getElementById("notificacao");
-        const tabButtons = document.querySelectorAll(".tab-button");
-        const tabContents = document.querySelectorAll(".tab-content");
-        
-        // --- SELETORES DOS FORMULÁRIOS ---
         const formCriarUsuario = document.getElementById("formCriarUsuario");
-        const formAlterarData = document.getElementById("formAlterarData");
-        const formAlterarSenha = document.getElementById("formAlterarSenha");
-        const usuarioAlterarDataInput = document.getElementById("usuarioAlterarData");
-        const usuarioAlterarSenhaInput = document.getElementById("usuarioAlterarSenha");
-
+        
         // --- SELETORES DA LISTAGEM ---
         const userListContainer = document.getElementById("userList");
         const searchInput = document.getElementById("searchInput");
@@ -611,33 +702,29 @@
         let todosOsUsuarios = []; 
         
         // --- SELETORES DO MODAL ---
-        const modalOverlay = document.getElementById("userDetailsModal");
+        const modalOverlay = document.getElementById("editUserModal");
         const btnCloseModal = document.getElementById("btnCloseModal");
-        const modalUsuario = document.getElementById("modal-usuario");
-        const modalSenha = document.getElementById("modal-senha");
-        const modalExpira = document.getElementById("modal-expira");
-        const modalDias = document.getElementById("modal-dias");
+        const modalUsernameTitle = document.getElementById("modal-username-title");
+        const modalExpiracao = document.getElementById("modal-expiracao");
+        const btnAdicionar30Dias = document.getElementById("btnAdicionar30Dias");
+        const diasAdicionarInput = document.getElementById("diasAdicionarInput");
+        const btnAdicionarDiasCustom = document.getElementById("btnAdicionarDiasCustom");
         const btnCopiarModal = document.getElementById("btnCopiarModal");
-        const btnEditarModal = document.getElementById("btnEditarModal");
-        const btnExcluirModal = document.getElementById("btnExcluirModal");
+        const btnAlterarSenhaModal = document.getElementById("btnAlterarSenhaModal");
+        const btnRemoverModal = document.getElementById("btnRemoverModal");
 
-        // --- FUNÇÕES AUXILIARES DE FEEDBACK ---
+        // --- FUNÇÕES AUXILIARES DE FEEDBACK E FORMATAÇÃO ---
         const mostrarNotificacao = (mensagem, tipo = "success") => {
             notificacao.textContent = mensagem;
             notificacao.className = `${tipo} show`;
             setTimeout(() => { notificacao.classList.remove('show'); }, 3000);
         };
         
-        const resetarFormularios = () => {
-            formCriarUsuario.reset();
-            formAlterarData.reset();
-            formAlterarSenha.reset();
-        };
-
-        const handleSuccess = (mensagem) => {
+        const handleSuccess = (mensagem, noReset = false) => {
             mostrarNotificacao(mensagem);
-            resetarFormularios();
-            listarUsuarios(); // Atualiza a lista após sucesso
+            if(!noReset) formCriarUsuario.reset();
+            preencherCamposIniciais();
+            listarUsuarios();
         };
         
         const handleErrors = (error) => {
@@ -646,113 +733,48 @@
         };
 
         const gerarCredenciaisAleatorias = (tamanho) => {
-            const chars = 'abcdefghijklmnopqrstuvwxyz';
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
             let resultado = '';
             for (let i = 0; i < tamanho; i++) resultado += chars.charAt(Math.floor(Math.random() * chars.length));
             return resultado;
         };
 
         const formatarData = (isoString) => {
-            if (!isoString) return "N/A";
+            if (!isoString) return { dataFormatada: "N/A", diasRestantes: "N/A" };
             try {
-                // Tenta criar a data. É crucial que o backend envie a data no formato ISO correto.
                 const dataObj = new Date(isoString);
-                
-                // Verifica se a data é válida
-                if (isNaN(dataObj.getTime())) return "Data inválida";
+                if (isNaN(dataObj.getTime())) return { dataFormatada: "Data inválida", diasRestantes: "N/A" };
                 
                 const dia = String(dataObj.getUTCDate()).padStart(2, '0');
                 const mes = String(dataObj.getUTCMonth() + 1).padStart(2, '0');
                 const ano = dataObj.getUTCFullYear();
-                return `${dia}/${mes}/${ano}`;
+                const dataFormatada = `${dia}/${mes}/${ano}`;
+
+                const hoje = new Date();
+                hoje.setHours(0, 0, 0, 0);
+                const diffTime = dataObj.getTime() - hoje.getTime();
+                const diasRestantes = diffTime > 0 ? Math.ceil(diffTime / (1000 * 60 * 60 * 24)) : 0;
+                
+                return { dataFormatada, diasRestantes };
             } catch (error) {
                 console.error("Erro ao formatar data:", error);
-                return "Data inválida";
+                return { dataFormatada: "Erro", diasRestantes: "N/A" };
             }
         };
         
-        // --- LÓGICA DAS ABAS ---
-        const selecionarAba = (nomeAba) => {
-            const abaButton = document.querySelector(`.tab-button[data-tab="${nomeAba}"]`);
-            if (abaButton) abaButton.click();
-        };
-
-        tabButtons.forEach(button => {
-            button.addEventListener("click", () => {
-                const targetTab = button.dataset.tab;
-                tabButtons.forEach(btn => btn.classList.remove("active"));
-                tabContents.forEach(content => content.classList.remove("active"));
-                button.classList.add("active");
-                document.getElementById(`tab-${targetTab}`).classList.add("active");
-                // Substitui socket.emit("listarUsuarios") por chamada REST
-                if (targetTab === 'listar') listarUsuarios(); 
-            });
-        });
-
-        // --- LÓGICA DO MODAL (Não muda, exceto a chamada de API no final) ---
+        // --- LÓGICA DO MODAL ---
         const abrirModal = () => modalOverlay.classList.add("show");
-        const fecharModal = () => modalOverlay.classList.remove("show");
+        const fecharModal = () => {
+            modalOverlay.classList.remove("show");
+            currentUserData = null; 
+            diasAdicionarInput.value = ""; // Limpa o input customizado
+        }
 
         btnCloseModal.addEventListener("click", fecharModal);
         modalOverlay.addEventListener("click", (e) => {
             if (e.target === modalOverlay) fecharModal();
         });
         
-        btnCopiarModal.addEventListener("click", async () => {
-            const textoParaCopiar = `
-        ⭐ Dados de Acesso Cliente ⭐
-        -------------------------
-        👤 Usuário: ${modalUsuario.textContent}
-        🔑 Senha: ${modalSenha.textContent}
-        📅 Expira em: ${modalExpira.textContent}
-        ⏳ Dias restantes: ${modalDias.textContent}
-        -------------------------
-        `.trim();
-
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                try {
-                    await navigator.clipboard.writeText(textoParaCopiar);
-                    mostrarNotificacao("Dados copiados para a área de transferência!");
-                } catch (err) {
-                    mostrarNotificacao("Erro ao copiar dados.", "error");
-                }
-            } else {
-                // Fallback para navegadores mais antigos
-                // ... (seu código de fallback aqui)
-                mostrarNotificacao("Seu navegador não suporta cópia automática.", "error");
-            }
-        });
-
-
-        btnEditarModal.addEventListener("click", () => {
-            const usuario = modalUsuario.textContent;
-            usuarioAlterarDataInput.value = usuario;
-            usuarioAlterarSenhaInput.value = usuario;
-            fecharModal();
-            selecionarAba('renovar');
-            mostrarNotificacao(`Usuário "${usuario}" selecionado para edição.`);
-        });
-        
-        // --- LÓGICA DE EXCLUSÃO (Migrada para REST) ---
-        btnExcluirModal.addEventListener("click", async () => {
-            const usuario = modalUsuario.textContent;
-            if (!usuario) {
-                mostrarNotificacao("Nenhum usuário selecionado para excluir.", "error");
-                return;
-            }
-
-            if (confirm(`Tem certeza que deseja excluir o usuário "${usuario}"?\nEsta ação não pode ser desfeita.`)) {
-                try {
-                    // Substitui socket.emit("removerUsuario") por chamada REST
-                    const res = await api("removerUsuario", { usuario }, "POST");
-                    handleSuccess(res.message);
-                    fecharModal();
-                } catch (error) {
-                    handleErrors(error);
-                }
-            }
-        });
-
         // --- LÓGICA DA LISTAGEM DE USUÁRIOS ---
         const renderizarListaUsuarios = (usuarios) => {
             userListContainer.innerHTML = "";
@@ -763,27 +785,23 @@
             usuarios.forEach(user => {
                 const userItem = document.createElement("div");
                 userItem.className = "user-list-item";
-                userItem.dataset.usuario = user.username;
-                userItem.dataset.senha = user.password;
+                userItem.dataset.user = JSON.stringify(user);
                 userItem.innerHTML = `
                     <div class="user-info-details">
                         <strong>${user.username}</strong>
                         <span>Senha: ${user.password}</span>
                     </div>
-                    <button class="btn-details">Ver Detalhes</button>
+                    <i data-feather="edit" style="color: var(--primary-green);"></i>
                 `;
                 userListContainer.appendChild(userItem);
             });
+            feather.replace(); // Re-renderiza os ícones
         };
         
-        // Função para Listar Usuários (Migrada para REST GET)
         const listarUsuarios = async () => {
-             userListContainer.innerHTML = "<p>Carregando usuários...</p>";
+             userListContainer.innerHTML = "<p>Buscando dados no servidor...</p>";
              try {
                 const res = await api("listarUsuarios", null, "GET");
-                // Presume-se que a rota /api/listarUsuarios retorne um objeto que contenha a lista
-                // Se a sua rota backend retorna apenas o array, você precisará ajustar aqui.
-                // Ex: se o backend retorna [user1, user2], use 'res' em vez de 'res.usuarios'
                 const usuarios = res.usuarios || res; 
                 todosOsUsuarios = usuarios;
                 renderizarListaUsuarios(usuarios);
@@ -793,33 +811,22 @@
              }
         };
 
-        // Função para Obter Detalhes do Login (Migrada para REST POST)
         const obterInfoLogin = async (usuario) => {
             try {
-                // Rota /api/infoLogin requer o usuário no corpo, então usamos POST
                 const response = await api("infoLogin", { usuario }, "POST"); 
 
                 if (response && response.exists && response.data) {
-                    const dataExpiraISO = response.data;
-                    const expiraData = new Date(dataExpiraISO);
-                    const hoje = new Date();
-
-                    const diffTime = expiraData.getTime() - hoje.getTime();
-                    const diasRestantes = diffTime > 0 ? Math.ceil(diffTime / (1000 * 60 * 60 * 24)) : 0;
-
-                    modalExpira.textContent = formatarData(dataExpiraISO);
-                    modalDias.textContent = diasRestantes;
+                    const { dataFormatada, diasRestantes } = formatarData(response.data);
+                    modalExpiracao.textContent = `${dataFormatada} (${diasRestantes} dias)`;
+                    if(currentUserData) currentUserData.expires = response.data;
                 } else {
-                    modalExpira.textContent = "Data não encontrada";
-                    modalDias.textContent = "N/A";
+                    modalExpiracao.textContent = "Data não encontrada";
                 }
             } catch (error) {
                 handleErrors(error);
-                modalExpira.textContent = "Erro ao carregar";
-                modalDias.textContent = "Erro";
+                modalExpiracao.textContent = "Erro ao carregar";
             }
         };
-
 
         searchInput.addEventListener("input", (e) => {
             const termoBusca = e.target.value.toLowerCase();
@@ -828,31 +835,89 @@
         });
         
         userListContainer.addEventListener("click", (e) => {
-            if (e.target.classList.contains("btn-details")) {
-                const userItem = e.target.closest(".user-list-item");
-                const { usuario, senha } = userItem.dataset;
-                
-                modalUsuario.textContent = usuario;
-                modalSenha.textContent = senha;
-                modalExpira.textContent = "Carregando...";
-                modalDias.textContent = "Carregando...";
-                
+            const userItem = e.target.closest(".user-list-item");
+            if (userItem) {
+                currentUserData = JSON.parse(userItem.dataset.user);
+                modalUsernameTitle.textContent = `Editando: ${currentUserData.username}`;
+                modalExpiracao.textContent = "Carregando...";
                 abrirModal();
-                obterInfoLogin(usuario); // Chama a nova função REST
+                obterInfoLogin(currentUserData.username);
             }
         });
 
         btnAtualizarLista.addEventListener("click", () => {
              mostrarNotificacao("Atualizando lista...");
-             listarUsuarios(); // Chama a nova função REST
+             listarUsuarios();
         });
 
-        // --- EVENT LISTENERS DOS FORMULÁRIOS (Migrados para REST) ---
-        (function preencherCamposIniciais() {
+        // --- AÇÕES DO MODAL ---
+        const adicionarDias = async (dias) => {
+            if (!currentUserData || !dias || dias <= 0) return;
+            try {
+                await api("alterarData", { usuario: currentUserData.username, dias: dias }, "POST");
+                mostrarNotificacao(`${dias} dia(s) adicionados com sucesso!`);
+                obterInfoLogin(currentUserData.username); // Re-busca os dados para atualizar a UI
+                diasAdicionarInput.value = ""; // Limpa o campo após o sucesso
+            } catch (error) {
+                handleErrors(error);
+            }
+        };
+
+        btnAdicionar30Dias.addEventListener("click", () => adicionarDias(30));
+        btnAdicionarDiasCustom.addEventListener("click", () => {
+            const dias = parseInt(diasAdicionarInput.value, 10);
+            if (dias && dias > 0) {
+                adicionarDias(dias);
+            } else {
+                mostrarNotificacao("Por favor, insira um número de dias válido.", "error");
+            }
+        });
+        
+        btnAlterarSenhaModal.addEventListener("click", async () => {
+            if (!currentUserData) return;
+            const novaSenha = prompt(`Digite a nova senha para o usuário "${currentUserData.username}":`);
+            if (novaSenha && novaSenha.trim() !== "") {
+                 try {
+                    await api("alterarSenha", { user: currentUserData.username, pass: novaSenha.trim() }, "POST");
+                    handleSuccess(`Senha de ${currentUserData.username} alterada!`, true);
+                    currentUserData.password = novaSenha.trim();
+                 } catch (error) {
+                    handleErrors(error);
+                 }
+            }
+        });
+
+        btnRemoverModal.addEventListener("click", async () => {
+             if (!currentUserData) return;
+             if (confirm(`Tem certeza que deseja excluir o usuário "${currentUserData.username}"?\nEsta ação não pode ser desfeita.`)) {
+                try {
+                    const res = await api("removerUsuario", { usuario: currentUserData.username }, "POST");
+                    handleSuccess(res.message);
+                    fecharModal();
+                } catch (error) {
+                    handleErrors(error);
+                }
+            }
+        });
+
+        btnCopiarModal.addEventListener("click", async () => {
+            if (!currentUserData) return;
+            const { dataFormatada, diasRestantes } = formatarData(currentUserData.expires);
+            const textoParaCopiar = `⭐ Dados de Acesso Cliente ⭐\n-------------------------\n👤 Usuário: ${currentUserData.username}\n🔑 Senha: ${currentUserData.password}\n📅 Expira em: ${dataFormatada}\n⏳ Dias restantes: ${diasRestantes}\n-------------------------`.trim();
+            try {
+                await navigator.clipboard.writeText(textoParaCopiar);
+                mostrarNotificacao("Dados copiados para a área de transferência!");
+            } catch (err) {
+                mostrarNotificacao("Erro ao copiar dados.", "error");
+            }
+        });
+
+        // --- FORMULÁRIO DE CRIAÇÃO ---
+        const preencherCamposIniciais = () => {
             document.getElementById("usuario").value = gerarCredenciaisAleatorias(6);
             document.getElementById("senha").value = gerarCredenciaisAleatorias(6);
             document.getElementById("dias").value = 30;
-        })();
+        };
         
         document.getElementById("btnGerarUsuario").addEventListener("click", () => {
             document.getElementById("usuario").value = gerarCredenciaisAleatorias(6);
@@ -866,66 +931,22 @@
             const usuario = document.getElementById("usuario").value;
             const senha = document.getElementById("senha").value;
             const dias = parseInt(document.getElementById("dias").value, 10);
-            
             try {
-                // Substitui socket.emit("criarUsuario") por chamada REST
                 const res = await api("criarUsuario", { usuario, senha, dias }, "POST");
                 handleSuccess(res.message || "Usuário criado com sucesso!");
             } catch (error) {
                 handleErrors(error);
             }
         });
-
-        formAlterarData.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const usuario = usuarioAlterarDataInput.value;
-            const dias = parseInt(document.getElementById("diasAdicionar").value, 10);
-            
-            try {
-                // Substitui socket.emit("alterarData") por chamada REST
-                const res = await api("alterarData", { usuario, dias }, "POST");
-                handleSuccess(res.message || "Data alterada com sucesso!");
-            } catch (error) {
-                handleErrors(error);
-            }
-        });
-// Localize este trecho no seu <script> (aproximadamente linha 900)
-formAlterarSenha.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    try {
-        const usuario = document.getElementById("usuarioAlterarSenha").value;
-        const novaSenha = document.getElementById("novaSenha").value;
         
-        // CORREÇÃO:
-        // Use 'user' para o nome de usuário, 'pass' para a senha, 
-        // e adicione 'days' (o backend espera os 3, mesmo que 'days' seja fixo).
-        const dadosParaEnviar = { 
-            user: usuario, 
-            pass: novaSenha, 
-           
-        };
-
-        const res = await api("alterarSenha", dadosParaEnviar, "POST");
-        handleSuccess("Senha alterada com sucesso!");
-
-    } catch (error) {
-        handleErrors(error);
-    }
-});
-
-        // --- Sidebar de Usuários Online (Migrado para REST GET) ---
+        // --- Sidebar de Usuários Online ---
         const atualizarOnline = async () => {
             const lista = document.getElementById("listaUsuariosOnline");
             lista.innerHTML = "<li>Atualizando...</li>";
             try {
-                // Substitui socket.emit("getOnline") por chamada REST
                 const data = await api("online", null, "GET");
-                
                 lista.innerHTML = "";
-                
-                // Adaptação da sua lógica de consolidação de usuários online
                 const todosUsuariosOnline = [...new Set([...(data.ssh || []), ...(data.v2ray || [])].map(item => item.user || item.username))]; 
-                
                 if (todosUsuariosOnline.length > 0) {
                     todosUsuariosOnline.forEach(user => {
                         const li = document.createElement("li");
@@ -936,7 +957,7 @@ formAlterarSenha.addEventListener("submit", async (e) => {
                     lista.innerHTML = "<li>Nenhum usuário online.</li>";
                 }
             } catch (error) {
-                handleErrors(error);
+                console.error("Erro ao buscar usuários online:", error);
                 lista.innerHTML = "<li>Erro ao carregar online.</li>";
             }
         };
@@ -944,6 +965,7 @@ formAlterarSenha.addEventListener("submit", async (e) => {
         document.getElementById("btnAtualizarOnline").addEventListener("click", atualizarOnline);
 
         // --- Inicialização ---
+        preencherCamposIniciais();
         atualizarOnline();
         listarUsuarios();
     });
