@@ -46,18 +46,27 @@ const redisClient = createClient({
 
 redisClient.on('error', (err) => console.log('Redis Client Error:', err));
 
-// VARIÁVEL REDIS STORE: Inicialmente indefinida. Se o try/catch for bem-sucedido, ela será preenchida.
+// VARIÁVEL REDIS STORE: Inicialmente indefinida.
 let redisStore; 
 
 // 2. Criar o Redis Store (Armazenamento Persistente)
 try {
     const RedisStoreFactory = require('connect-redis');
     
-    // CORREÇÃO: Trata a exportação CJS/ESM do connect-redis (Resolve "ConnectRedisStore não é uma função").
-    const RedisStoreConstructor = (RedisStoreFactory.default || RedisStoreFactory)(session); 
+    // CORREÇÃO FINAL para importação CJS/ESM: Garantir que a função factory seja extraída e chamada.
+    const connectRedisFunction = RedisStoreFactory.default || RedisStoreFactory;
+
+    let RedisStoreConstructor;
+    
+    if (typeof connectRedisFunction === 'function') {
+        // Chama a função factory, passando 'session' para obter o Construtor do Store.
+        RedisStoreConstructor = connectRedisFunction(session);
+    } else {
+        throw new TypeError("Não foi possível localizar a função factory de connect-redis.");
+    }
 
     if (typeof RedisStoreConstructor !== 'function') {
-        throw new TypeError("ConnectRedisStore não é uma função construtora. Problema de exportação do pacote.");
+        throw new TypeError("ConnectRedisStore NÃO RETORNOU UMA FUNÇÃO CONSTRUTORA.");
     }
     
     // Instanciar o Store
@@ -69,7 +78,7 @@ try {
 } catch (error) {
     console.error("❌ ERRO CRÍTICO ao configurar connect-redis:", error.message);
     console.warn("Retornando ao MemoryStore do Express. (Risco de estabilidade em produção!)");
-    // redisStore permanece undefined, o que faz o app.use(session) usar o MemoryStore padrão.
+    redisStore = undefined;
 }
 
 // Função de Inicialização Principal (Async para await redisClient.connect())
@@ -82,7 +91,7 @@ async function initializeApp() {
             console.log("Conexão Redis estabelecida com sucesso.");
         } catch (error) {
             console.warn("❌ Falha na conexão física com o Redis. Usando MemoryStore como fallback.");
-            redisStore = undefined; // Força o fallback se a conexão falhar
+            redisStore = undefined; 
         }
     }
 
@@ -90,14 +99,14 @@ async function initializeApp() {
     // 3. Aplicar ao Express
     app.use(session({
       store: redisStore, // Usa Redis se configurado e conectado, ou MemoryStore se falhar
-      secret: process.env.SESSION_SECRET || 'segredo-super-seguro-padrao', // OBRIGATÓRIO EM PROD
+      secret: process.env.SESSION_SECRET || 'segredo-super-seguro-padrao', 
       resave: false,
       saveUninitialized: false,
       cookie: { 
         maxAge: 1000 * 60 * 60, // 1 hora
         secure: process.env.NODE_ENV === 'production', // ESSENCIAL: true na Vercel (HTTPS)
         httpOnly: true, // Boa prática de segurança
-        sameSite: 'lax' // Boa prática para evitar problemas de cross-site, sem ser muito restritivo
+        sameSite: 'lax' // Boa prática para evitar problemas de cross-site
       }
     }));
 
@@ -145,7 +154,6 @@ async function initializeApp() {
             res.json({ success: true });
         });
       } catch (err) {
-        // Este é o 401 que você estava vendo se as credenciais fossem inválidas
         res.status(401).json({ error: "Credenciais inválidas." });
       }
     });
@@ -270,7 +278,6 @@ async function initializeApp() {
         const usuarios = await listarUsuarios();
         console.log("Lista de usuários SSH na inicialização:", JSON.stringify(usuarios, null, 2));
       } catch (error) {
-       // Este erro geralmente é o ETIMEDOUT ou Invalid Username, confirme suas credenciais SSH.
        console.log('Erro ao listar usuários na inicialização (Verifique suas credenciais SSH):', error.message);
       }
     })();
