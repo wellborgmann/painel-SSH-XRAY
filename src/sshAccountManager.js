@@ -261,32 +261,62 @@ export async function removerUsuarioSSH(username, editar) {
   return true;
 }
 
-export function infoLogin(username) {
-  return new Promise(async (resolve, reject) => {
+/**
+ * Busca informações de um usuário, incluindo data de expiração da conta SSH e UUID do V2Ray.
+ * @param {string} username O nome de usuário para buscar.
+ * @returns {Promise<object>} Um objeto com as informações do usuário.
+ */
+export async function infoLogin(username) {
+  try {
+    // Etapa 1: Ler o JSON e encontrar o UUID do usuário no V2Ray
+    const arquivo = await lerJson();
+    const inboundVless = arquivo.inbounds.find(
+      (i) => i.protocol === "vless" && i.settings?.clients
+    );
+    const clientV2Ray = inboundVless?.settings.clients.find(
+      (c) => c.email === username
+    );
+    const uuid = clientV2Ray?.id || null; // Pega o UUID ou define como nulo se não encontrar
+
+    // Etapa 2: Conectar via SSH para obter a data de expiração
     const conn = await criarConexaoSSH();
     const comando = `chage -l ${username} | grep -E 'Account expires' | cut -d ' ' -f3-`;
-    let data = "";
 
-    conn.exec(comando, (err, stream) => {
-      if (err) {
-        conn.end();
-        return reject(err);
-      }
-      stream
-        .on("data", (chunk) => (data += chunk.toString()))
-        .on("close", () => {
+    const dataExpiracao = await new Promise((resolve, reject) => {
+      let output = "";
+      conn.exec(comando, (err, stream) => {
+        if (err) {
           conn.end();
-          const trimmed = data.trim();
-          if (!trimmed) return resolve({ username, exists: false });
-          if (trimmed === "never")
-            return resolve({ username, exists: true, data: null });
-
-          const date = new Date(trimmed);
-          if (isNaN(date)) return reject(new Error("Data inválida"));
-          resolve({ username, exists: true, data: date });
-        });
+          return reject(err);
+        }
+        stream
+          .on("data", (chunk) => (output += chunk.toString()))
+          .stderr.on("data", (chunk) => (output += chunk.toString())) // Captura erros também
+          .on("close", () => {
+            conn.end();
+            resolve(output.trim());
+          });
+      });
     });
-  });
+
+    // Etapa 3: Processar os resultados e retornar o objeto combinado
+    if (!dataExpiracao) {
+      return { username, exists: false, data: null, uuid: null };
+    }
+    if (dataExpiracao === "never") {
+      return { username, exists: true, data: null, uuid };
+    }
+
+    const date = new Date(dataExpiracao);
+    if (isNaN(date)) {
+      throw new Error(`Data de expiração inválida recebida: ${dataExpiracao}`);
+    }
+
+    return { username, exists: true, data: date, uuid };
+  } catch (error) {
+    console.error(`Falha ao obter informações do login "${username}":`, error);
+    throw error; // Re-lança o erro para ser tratado por quem chamou a função
+  }
 }
 
 export function isExpired(obj) {

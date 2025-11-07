@@ -253,7 +253,7 @@ async function initializeApp() {
       try {
         const { usuario } = req.body;
         const result = await infoLogin(usuario);
-
+        console.log(result)
         res.json(result);
       } catch (error) {
         console.error('Erro /api/infoLogin:', error.message);

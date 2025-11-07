@@ -904,6 +904,7 @@
                     diasRestantesInfo = diasRestantes;
                     modalExpiracao.textContent = `${dataFormatada} (${diasRestantes} dias)`;
                     if(currentUserData) currentUserData.expires = response.data;
+                    currentUserData.uuid = response.uuid || "indisponível";
                 } else {
                     modalExpiracao.textContent = "Data não encontrada";
                 }
@@ -1037,8 +1038,9 @@
 
         btnCopiarModal.addEventListener("click", async () => {
             if (!currentUserData) return;
+       
             const { dataFormatada, diasRestantes } = formatarData(currentUserData.expires);
-            const texto = `⭐ Dados de Acesso ⭐\n-------------------------\n👤 Usuário: ${currentUserData.username}\n🔑 Senha: ${currentUserData.password}\n📅 Expira em: ${dataFormatada}\n⏳ Dias restantes: ${diasRestantes}\n-------------------------`;
+            const texto = `⭐ Dados de Acesso ⭐\n-------------------------\n👤 Usuário: ${currentUserData.username}\n🔑 Senha: ${currentUserData.password}\n🔑 Uuid: ${currentUserData.uuid}\n📅 Expira em: ${dataFormatada}\n⏳ Dias restantes: ${diasRestantes}\n-------------------------`;
             try {
                 await navigator.clipboard.writeText(texto.trim());
                 mostrarNotificacao("Dados copiados!");
