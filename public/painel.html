@@ -694,7 +694,7 @@
         <div class="modal">
             <div class="modal-header">
                 <h3 id="modal-username-title">Editando Usuário</h3>
-                <button id="btnCloseModal" class="btn-close-modal" title="Fechar"><i data-feather="x"></i></button>
+                <button class="btn-close-modal" title="Fechar"><i data-feather="x"></i></button>
             </div>
             <div class="modal-body">
                 <div class="date-management">
@@ -721,17 +721,81 @@
         </div>
     </div>
 
+    <!-- Modal de Alterar Senha (alert2) -->
+    <div id="changePasswordModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Alterar Senha</h3>
+                <button class="btn-close-modal" title="Fechar"><i data-feather="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--font-color-dark); margin-bottom: 20px;">
+                    Digite a nova senha para o usuário <strong id="changePasswordUsername" style="color: var(--primary-green);"></strong>:
+                </p>
+                <div class="input-group">
+                    <i class="icon" data-feather="key"></i>
+                    <input type="text" id="novaSenhaInput" placeholder="Nova senha" required>
+                    <button type="button" class="btn-generate" id="btnGerarNovaSenha" title="Gerar nova senha"><i data-feather="shuffle"></i></button>
+                </div>
+            </div>
+            <div class="modal-footer" style="grid-template-columns: 1fr 1fr;">
+                 <button id="btnCancelChangePassword" class="btn-submit btn-modal" style="border-color: var(--font-color-dark); color: var(--font-color-dark); background: transparent;">
+                    Cancelar
+                </button>
+                <button id="btnConfirmChangePassword" class="btn-submit btn-modal" style="border-color: var(--success-color); color: var(--success-color); background: transparent;">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Notificação -->
     <div id="notificacao"></div>
 
-    <script>
+<script>
     document.addEventListener("DOMContentLoaded", () => {
         feather.replace();
 
-        const API_BASE = "/api"; 
-        let currentUserData = null; 
-        
+        const API_BASE = "/api";
+        let currentUserData = null;
+        let todosOsUsuarios = [];
+
+        // --- FUNÇÕES DE CONTROLE DE MODAL E HISTÓRICO ---
+        const openModal = (modalId) => {
+            const modalElement = document.getElementById(modalId);
+            if (!modalElement) return;
+
+            // Fecha outros modais para evitar sobreposição
+            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('show'));
+
+            modalElement.classList.add('show');
+            // Adiciona um estado ao histórico do navegador para o modal
+            history.pushState({ modalId: modalId }, `Modal ${modalId}`, `#${modalId}`);
+        };
+
+        const closeModal = () => {
+            // Ao invés de fechar diretamente, voltamos no histórico do navegador
+            history.back();
+        };
+
+        // Listener para o evento 'popstate' (botão de voltar do navegador)
+        window.addEventListener('popstate', (event) => {
+            // Fecha todos os modais abertos
+            document.querySelectorAll('.modal-overlay').forEach(modal => {
+                modal.classList.remove('show');
+            });
+
+            // Se o estado do histórico contiver um modalId, reabre-o
+            // (útil para navegação com botões de avançar/voltar)
+            if (event.state && event.state.modalId) {
+                const modalToReopen = document.getElementById(event.state.modalId);
+                if (modalToReopen) {
+                    modalToReopen.classList.add('show');
+                }
+            }
+        });
+
+        // --- CHAMADAS À API ---
         const api = async (rota, dados = null, metodo = "POST") => {
             document.getElementById('loader').classList.add('show');
             try {
@@ -764,11 +828,9 @@
         const userListContainer = document.getElementById("userList");
         const searchInput = document.getElementById("searchInput");
         const btnAtualizarLista = document.getElementById("btnAtualizarLista");
-        let todosOsUsuarios = []; 
         
-        // --- SELETORES DO MODAL ---
-        const modalOverlay = document.getElementById("editUserModal");
-        const btnCloseModal = document.getElementById("btnCloseModal");
+        // --- SELETORES DO MODAL DE EDIÇÃO ---
+        const editModalOverlay = document.getElementById("editUserModal");
         const modalUsernameTitle = document.getElementById("modal-username-title");
         const modalExpiracao = document.getElementById("modal-expiracao");
         const btnAdicionar30Dias = document.getElementById("btnAdicionar30Dias");
@@ -777,6 +839,14 @@
         const btnCopiarModal = document.getElementById("btnCopiarModal");
         const btnAlterarSenhaModal = document.getElementById("btnAlterarSenhaModal");
         const btnRemoverModal = document.getElementById("btnRemoverModal");
+        
+        // --- SELETORES DO MODAL DE ALTERAR SENHA (alert2) ---
+        const changePasswordModal = document.getElementById('changePasswordModal');
+        const changePasswordUsername = document.getElementById('changePasswordUsername');
+        const novaSenhaInput = document.getElementById('novaSenhaInput');
+        const btnGerarNovaSenha = document.getElementById('btnGerarNovaSenha');
+        const btnCancelChangePassword = document.getElementById('btnCancelChangePassword');
+        const btnConfirmChangePassword = document.getElementById('btnConfirmChangePassword');
         
         // --- SELETORES DA SIDEBAR/NOTCH ---
         const sidebar = document.getElementById('online-users-sidebar');
@@ -847,21 +917,12 @@
             currentUserData = userData;
             modalUsernameTitle.textContent = `Editando: ${currentUserData.username}`;
             modalExpiracao.textContent = "Carregando...";
-            modalOverlay.classList.add("show");
+            openModal("editUserModal");
             obterInfoLogin(currentUserData.username);
-            history.pushState({ modalAberto: true }, "", "#modal");s
         };
         
-        const fecharModal = () => {
-            modalOverlay.classList.remove("show");
-            currentUserData = null; 
-            diasAdicionarInput.value = "";
-             if (location.hash === "#modal") history.back();
-        };
-
-        btnCloseModal.addEventListener("click", fecharModal);
-        modalOverlay.addEventListener("click", (e) => {
-            if (e.target === modalOverlay) fecharModal();
+        editModalOverlay.addEventListener("click", (e) => {
+            if (e.target === editModalOverlay || e.target.closest('.btn-close-modal')) closeModal();
         });
         
         // --- LÓGICA DA LISTAGEM E PESQUISA DE USUÁRIOS ---
@@ -876,7 +937,6 @@
                 const userItem = document.createElement("div");
                 userItem.className = "user-list-item";
                 userItem.dataset.user = JSON.stringify(user);
-                
                 userItem.innerHTML = `
                     <div class="user-info-details user-list-item-clickable">
                         <strong>${user.username}</strong>
@@ -898,7 +958,6 @@
              try {
                 const res = await api("listarUsuarios", null, "GET");
                 todosOsUsuarios = res.usuarios || res;
-                // Renderiza a lista com base no termo de busca atual (se houver)
                 const termoBusca = searchInput.value.toLowerCase();
                 const usuariosFiltrados = todosOsUsuarios.filter(user => user.username.toLowerCase().includes(termoBusca));
                 renderizarListaUsuarios(usuariosFiltrados);
@@ -908,7 +967,6 @@
              }
         };
 
-        // [CORRIGIDO] Event listener da pesquisa
         searchInput.addEventListener("input", () => {
             const termoBusca = searchInput.value.toLowerCase();
             const usuariosFiltrados = todosOsUsuarios.filter(user => user.username.toLowerCase().includes(termoBusca));
@@ -945,27 +1003,26 @@
                 diasAdicionarInput.value = "";
             } catch (error) { handleErrors(error); }
         };
+
         btnAdicionar30Dias.addEventListener("click", () => { 
             const diasParaAdicionar = (diasRestantesInfo !== null && diasRestantesInfo > 0) ? (diasRestantesInfo + 30) : 30;
             adicionarDias(diasParaAdicionar);
         });
+
         btnAdicionarDiasCustom.addEventListener("click", () => {
             const dias = parseInt(diasAdicionarInput.value, 10);
             if (dias && dias > 0) adicionarDias(dias);
             else mostrarNotificacao("Insira um número de dias válido.", "error");
         });
-        btnAlterarSenhaModal.addEventListener("click", async () => {
+
+        btnAlterarSenhaModal.addEventListener("click", () => {
             if (!currentUserData) return;
-            const novaSenha = prompt(`Digite a nova senha para "${currentUserData.username}":`);
-            if (novaSenha && novaSenha.trim() !== "") {
-                 try {
-                    await api("alterarSenha", { user: currentUserData.username, pass: novaSenha.trim() }, "POST");
-                    mostrarNotificacao(`Senha de ${currentUserData.username} alterada!`);
-                    await listarUsuarios();
-                    currentUserData.password = novaSenha.trim();
-                 } catch (error) { handleErrors(error); }
-            }
+            changePasswordUsername.textContent = currentUserData.username;
+            novaSenhaInput.value = '';
+            openModal('changePasswordModal');
+            novaSenhaInput.focus();
         });
+
         btnRemoverModal.addEventListener("click", async () => {
              if (!currentUserData) return;
              if (confirm(`Tem certeza que deseja excluir o usuário "${currentUserData.username}"?`)) {
@@ -973,10 +1030,11 @@
                     const res = await api("removerUsuario", { usuario: currentUserData.username }, "POST");
                     mostrarNotificacao(res.message);
                     await listarUsuarios();
-                    fecharModal();
+                    closeModal();
                 } catch (error) { handleErrors(error); }
             }
         });
+
         btnCopiarModal.addEventListener("click", async () => {
             if (!currentUserData) return;
             const { dataFormatada, diasRestantes } = formatarData(currentUserData.expires);
@@ -987,7 +1045,34 @@
             } catch (err) { mostrarNotificacao("Erro ao copiar.", "error"); }
         });
 
-     // --- LÓGICA DA SIDEBAR/NOTCH ---
+        // --- AÇÕES DO MODAL DE ALTERAR SENHA (alert2) ---
+        changePasswordModal.addEventListener("click", (e) => {
+            if (e.target === changePasswordModal || e.target.closest('.btn-close-modal') || e.target.id === 'btnCancelChangePassword') {
+                closeModal();
+            }
+        });
+
+        btnGerarNovaSenha.addEventListener('click', () => {
+            novaSenhaInput.value = gerarCredenciaisAleatorias(8);
+        });
+
+        btnConfirmChangePassword.addEventListener("click", async () => {
+            if (!currentUserData) return;
+            const novaSenha = novaSenhaInput.value.trim();
+            if (novaSenha) {
+                 try {
+                    await api("alterarSenha", { user: currentUserData.username, pass: novaSenha }, "POST");
+                    mostrarNotificacao(`Senha de ${currentUserData.username} alterada!`);
+                    await listarUsuarios();
+                    currentUserData.password = novaSenha;
+                    closeModal(); // Fecha o modal de senha e volta para o modal de edição
+                 } catch (error) { handleErrors(error); }
+            } else {
+                mostrarNotificacao("A nova senha não pode estar em branco.", "error");
+            }
+        });
+
+        // --- LÓGICA DA SIDEBAR/NOTCH ---
         const atualizarOnline = async () => {
             listaUsuariosOnline.innerHTML = "<li>Atualizando...</li>";
             try {
@@ -1027,14 +1112,13 @@
             }
         });
 
-        // --- INICIALIZAÇÃO ---
+        // --- INICIALIZAÇÃO E FORMULÁRIO DE CRIAÇÃO ---
         const preencherCamposIniciais = () => {
             document.getElementById("usuario").value = gerarCredenciaisAleatorias(6);
             document.getElementById("senha").value = gerarCredenciaisAleatorias(6);
             document.getElementById("dias").value = 30;
         };
 
-        // [NOVO] Lógica do formulário de criação alterada
         formCriarUsuario.addEventListener("submit", async (e) => {
             e.preventDefault();
             const usuario = document.getElementById("usuario").value;
@@ -1043,15 +1127,11 @@
             try {
                 const res = await api("criarUsuario", { usuario, senha, dias });
                 mostrarNotificacao(res.message || "Usuário criado com sucesso!");
-                
                 formCriarUsuario.reset();
                 preencherCamposIniciais();
                 await listarUsuarios();
-                
-                // Abre o modal para o usuário recém-criado
                 const newUser = { username: usuario, password: senha, expires: null }; 
                 abrirModalEdicao(newUser);
-
             } catch (error) {
                 handleErrors(error);
             }
@@ -1059,12 +1139,6 @@
         
         document.getElementById("btnGerarUsuario").addEventListener("click", () => document.getElementById("usuario").value = gerarCredenciaisAleatorias(6));
         document.getElementById("btnGerarSenha").addEventListener("click", () => document.getElementById("senha").value = gerarCredenciaisAleatorias(6));
-
-
-         window.addEventListener("popstate", (event) => {
-                fecharModal();
-                event.stopImmediatePropagation()
-    });
 
         (async () => {
             preencherCamposIniciais();
