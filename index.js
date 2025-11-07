@@ -270,3 +270,5 @@ export default app;
 initializeApp();
 
 // Remover o 'export default app;' para garantir que ele rode como um servidor persistente.
+
+

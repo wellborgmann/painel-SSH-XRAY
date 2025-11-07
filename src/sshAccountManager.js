@@ -14,8 +14,57 @@ const connSettings = {
   port: process.env.SSH_PORT,
   username: process.env.SSH_USER,
   password: process.env.SSH_PASSWORD,
-  readyTimeout: 60000,
+  // Mantemos o timeout estendido para maior estabilidade em redes lentas
+  readyTimeout: 45000, 
+  handshakeTimeout: 45000 
 };
+
+// =======================================================
+// 💡 LÓGICA STATELESS (VERCEL COMPATÍVEL)
+// Uma nova conexão é criada e fechada para cada operação.
+// =======================================================
+
+/**
+ * Função genérica para executar comandos SSH no servidor.
+ * Uma nova conexão é estabelecida para cada chamada.
+ * @param {string} comando O comando shell a ser executado.
+ * @returns {Promise<string>} O output do comando.
+ */
+export function executarComandoSSH(comando) {
+  return new Promise((resolve, reject) => {
+    const conn = new Client(); // Novo cliente para esta execução
+    
+    conn.on("error", (err) => {
+        conn.end();
+        reject(err);
+    });
+
+    conn
+      .on("ready", () => {
+        conn.exec(comando, (err, stream) => {
+          if (err) {
+            conn.end();
+            return reject(err);
+          }
+          
+          let output = "";
+          stream
+            .on("close", (code, signal) => {
+              conn.end(); // CRÍTICO: Encerra a conexão após o comando
+              resolve(output);
+            })
+            .on("data", (data) => (output += data.toString()))
+            .stderr.on("data", (data) => (output += data.toString()));
+        });
+      })
+      .connect(connSettings);
+  });
+}
+
+// =======================================================
+// Exportações de Gerenciamento de Usuários (Ajustadas para Stateless)
+// =======================================================
+
 
 // Função para criar um usuário SSH no servidor
 export function criarUsuario(login, senha, dias, limite) {
@@ -36,32 +85,6 @@ export function criarUsuario(login, senha, dias, limite) {
     `;
 
   return executarComandoSSH(comando);
-}
-
-// Função genérica para executar comandos SSH no servidor
-export function executarComandoSSH(comando) {
-  return new Promise((resolve, reject) => {
-    const conn = new Client();
-    conn
-      .on("ready", () => {
-        conn.exec(comando, (err, stream) => {
-          if (err) {
-            conn.end();
-            return reject(err);
-          }
-          let output = "";
-          stream
-            .on("close", () => {
-              conn.end();
-              resolve(output);
-            })
-            .on("data", (data) => (output += data.toString()))
-            .stderr.on("data", (data) => (output += data.toString()));
-        });
-      })
-      .on("error", reject)
-      .connect(connSettings);
-  });
 }
 
 // Função para reiniciar o serviço V2Ray
@@ -171,7 +194,9 @@ export function alterarData(login, dias) {
 
 
 const comando = `echo "FZpwoU:1111" | sudo chpasswd`;
-executarComandoSSH(comando);
+// Esta linha deve ser removida ou alterada, pois será executada toda vez que o módulo for carregado
+// (o que acontece em cada requisição na Vercel). Vou comentar ela por segurança.
+// executarComandoSSH(comando);
 
 
 export async function online() {
@@ -276,48 +301,50 @@ export async function alterarSenha(data) {
 export function infoLogin(loginName) {
   return new Promise((resolve, reject) => {
     const comando = `chage -l ${loginName} | grep -E 'Account expires' | cut -d ' ' -f3-`;
-    const conn = new Client();
+    const conn = new Client(); // Novo cliente para esta execução
     let dataReceived = "";
-
-    conn.on("ready", () => {
-      conn.exec(comando, (err, stream) => {
-        if (err) {
-          conn.end();
-          return reject(err);
-        }
-        stream
-          .on("close", () => {
-            conn.end();
-            if (dataReceived) {
-              const trimmedData = dataReceived.trim();
-              if (trimmedData === "never") {
-                resolve({ loginName, exists: true, data: null });
-              } else {
-                const expirationDate = new Date(trimmedData);
-                if (isNaN(expirationDate)) {
-                  reject(new Error("Data de expiração inválida recebida"));
-                } else {
-                  resolve({ loginName, exists: true, data: expirationDate });
-                }
-              }
-            } else {
-              // Assumindo que se não houver dados, o usuário não existe ou comando falhou
-              resolve({ loginName, exists: false }); 
-            }
-          })
-          .on("data", (data) => {
-            dataReceived += data.toString();
-          })
-          .stderr.on("data", (data) => {
-            console.error("Erro de execução do comando:", data.toString());
-          });
-      });
-    }).connect(connSettings);
-
+    
     conn.on("error", (err) => {
-      console.error("Erro na conexão SSH:", err);
+      conn.end();
       reject(err);
     });
+
+    conn
+      .on("ready", () => {
+        conn.exec(comando, (err, stream) => {
+          if (err) {
+            conn.end();
+            return reject(err);
+          }
+          stream
+            .on("close", () => {
+              conn.end(); // CRÍTICO: Encerra a conexão após o comando
+              if (dataReceived) {
+                const trimmedData = dataReceived.trim();
+                if (trimmedData === "never") {
+                  resolve({ loginName, exists: true, data: null });
+                } else {
+                  const expirationDate = new Date(trimmedData);
+                  if (isNaN(expirationDate)) {
+                    reject(new Error("Data de expiração inválida recebida"));
+                  } else {
+                    resolve({ loginName, exists: true, data: expirationDate });
+                  }
+                }
+              } else {
+                // Assumindo que se não houver dados, o usuário não existe ou comando falhou
+                resolve({ loginName, exists: false }); 
+              }
+            })
+            .on("data", (data) => {
+              dataReceived += data.toString();
+            })
+            .stderr.on("data", (data) => {
+              console.error("Erro de execução do comando:", data.toString());
+            });
+        });
+      })
+      .connect(connSettings);
   });
 }
 

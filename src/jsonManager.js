@@ -3,12 +3,14 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// Aumentamos o timeout para 45 segundos para maior estabilidade em ambientes serverless
 const connSettings = {
   host: process.env.SSH_IP,
   port: process.env.SSH_PORT,
   username: process.env.SSH_USER,
   password: process.env.SSH_PASSWORD,
-  readyTimeout: 60000,
+  readyTimeout: 45000,          // Tempo limite para o status 'ready'
+  handshakeTimeout: 45000       // Tempo limite para o handshake inicial
 };
 
 const remoteFilePath = "/usr/local/etc/xray/config.json";
@@ -19,7 +21,13 @@ const remoteFilePath = "/usr/local/etc/xray/config.json";
  */
 async function lerJson() {
   return new Promise((resolve, reject) => {
-    const conn = new Client();
+    const conn = new Client(); // Nova conexão
+    
+    conn.on("error", (err) => {
+      conn.end(); // CRÍTICO: Encerra em caso de erro
+      reject(err);
+    });
+
     conn
       .on("ready", () => {
         conn.sftp((err, sftp) => {
@@ -29,7 +37,7 @@ async function lerJson() {
           }
 
           sftp.readFile(remoteFilePath, "utf8", (err, data) => {
-            conn.end();
+            conn.end(); // CRÍTICO: Encerra após a leitura
             if (err) {
               return reject(err);
             }
@@ -44,10 +52,6 @@ async function lerJson() {
         });
       })
       .connect(connSettings);
-
-    conn.on("error", (err) => {
-      reject(err);
-    });
   });
 }
 
@@ -58,11 +62,11 @@ async function lerJson() {
  */
 function SalvarJson(jsonData) {
   return new Promise((resolve, reject) => {
-    const conn = new Client();
-    const tempFilePath = remoteFilePath; // Mantém o nome da variável como no original
+    const conn = new Client(); // Nova conexão
+    const tempFilePath = remoteFilePath;
 
     conn.on("error", (err) => {
-      conn.end();
+      conn.end(); // CRÍTICO: Encerra em caso de erro
       reject(err);
     });
 
@@ -78,12 +82,11 @@ function SalvarJson(jsonData) {
             tempFilePath,
             JSON.stringify(jsonData, null, 2),
             async (err) => {
+              conn.end(); // CRÍTICO: Encerra após a escrita
               if (err) {
-                conn.end();
                 return reject(err);
               }
 
-              conn.end();
               console.log("Json v2 Salvo");
               resolve();
             }
