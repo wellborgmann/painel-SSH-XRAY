@@ -191,6 +191,9 @@ async function initializeApp() {
     app.get('/api/online', proteger, async (req, res) => {
       try {
         const usuarios = await online();
+        console.log("original",usuarios)
+        usuarios.ssh = usuarios.ssh.filter((u)=> u.user !== 'unknown'&& u.user !== 'root');
+        console.log(usuarios)
         res.json(usuarios);
       } catch (err) {
         console.error('Erro /api/online:', err.message);
