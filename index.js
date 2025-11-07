@@ -110,6 +110,13 @@ async function initializeApp() {
       }
     }));
 
+    app.use((req, res, next) => {
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("Keep-Alive", "timeout=5, max=100");
+  next();
+});
+
+
 
     // ======= LOGIN =======
     function logar(email, password) {
