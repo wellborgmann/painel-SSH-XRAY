@@ -38,6 +38,24 @@
             box-sizing: border-box;
         }
 
+        /* ESTILOS DA SCROLLBAR PERSONALIZADA */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background-color: var(--bg-color);
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: var(--primary-green);
+            border-radius: 10px;
+            border: 2px solid var(--bg-color);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: var(--light-green);
+        }
+
+
         /* EFEITO SCANLINE SUTIL */
         body::after {
             content: " ";
@@ -106,8 +124,8 @@
             padding: 40px;
             display: flex;
             flex-direction: column;
-            align-items: center; /* Centraliza os painéis */
-            gap: 30px; /* Espaço entre os painéis */
+            align-items: center; 
+            gap: 30px;
         }
 
         /* --- CABEÇALHO --- */
@@ -118,19 +136,17 @@
             text-shadow: var(--glow-effect);
             text-align: center;
         }
-
         header h1 {
             font-size: 2.5rem;
             font-weight: 700;
             color: var(--primary-green);
         }
-
         header p {
             color: var(--font-color-dark);
             font-size: 1rem;
         }
-
-        /* --- SIDEBAR (USUÁRIOS ONLINE) --- */
+       
+        /* --- SIDEBAR (DESKTOP) / NOTCH (MOBILE) --- */
         .sidebar {
             width: 300px;
             flex-shrink: 0;
@@ -151,37 +167,19 @@
             border-bottom: 1px solid var(--border-color);
             color: var(--primary-green);
         }
-
         .sidebar-header h2 {
             font-size: 1.2rem;
             font-weight: 600;
         }
-
-        .btn-refresh {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            background-color: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--font-color);
-            padding: 12px;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            transition: all var(--transition-speed) ease;
-            margin-bottom: 20px;
-            font-weight: 500;
-        }
-        .btn-refresh:hover {
-            background-color: var(--primary-green);
-            color: var(--bg-color);
-            border-color: var(--primary-green);
-            box-shadow: var(--glow-effect);
+        .sidebar-header .chevron-icon {
+            display: none; /* Escondido no desktop */
+            margin-left: auto;
+            transition: transform var(--transition-speed) ease;
         }
 
         #listaUsuariosOnline {
             list-style: none;
-            overflow-y: auto;
+            overflow-y: none;
             flex-grow: 1;
         }
         #listaUsuariosOnline li {
@@ -194,12 +192,14 @@
             font-weight: 500;
             transition: all var(--transition-speed) ease;
             word-break: break-all;
+            cursor: pointer;
         }
         #listaUsuariosOnline li:hover {
             transform: translateX(5px);
             border-left: 3px solid var(--primary-green);
+            background-color: rgba(0, 255, 127, 0.05);
         }
-        
+
         /* --- PAINEL DE GERENCIAMENTO UNIFICADO --- */
         .management-panel {
             background-color: var(--panel-bg);
@@ -275,8 +275,7 @@
             border-color: var(--primary-green);
         }
 
-        .btn-submit {
-            width: 100%;
+        .btn-submit, .btn-refresh {
             padding: 15px;
             background: transparent;
             border: 1px solid var(--primary-green);
@@ -292,14 +291,20 @@
             justify-content: center;
             gap: 8px;
         }
-        .btn-submit:hover {
+         .btn-refresh {
+            padding: 12px;
+            border-color: var(--border-color);
+            color: var(--font-color);
+            margin-bottom: 15px;
+        }
+        .btn-submit:hover, .btn-refresh:hover {
             background-color: var(--primary-green);
             color: var(--bg-color);
             box-shadow: var(--glow-effect);
             transform: translateY(-2px);
         }
         
-        /* --- ESTILOS DA LISTAGEM DE USUÁRIOS --- */
+        /* --- LISTAGEM DE USUÁRIOS --- */
         .search-container {
             display: flex;
             gap: 10px;
@@ -321,6 +326,8 @@
             border-radius: var(--border-radius);
             margin-bottom: 12px;
             transition: all var(--transition-speed) ease;
+        }
+        .user-list-item-clickable {
             cursor: pointer;
         }
         .user-list-item:hover {
@@ -334,14 +341,26 @@
             font-weight: 600;
             color: var(--primary-green);
         }
-        .user-info-details span {
-            font-size: 0.9rem;
+        .password-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             color: var(--font-color-dark);
-            word-wrap: break-word;
-            display: block;
+            font-size: 0.9rem;
+        }
+        .password-text {
+            font-family: 'Source Code Pro', monospace;
+        }
+        .toggle-password-icon {
+            cursor: pointer;
+            color: var(--font-color-dark);
+            transition: color var(--transition-speed);
+        }
+        .toggle-password-icon:hover {
+            color: var(--primary-green);
         }
         
-        /* --- ESTILOS DO MODAL --- */
+        /* --- MODAL DE EDIÇÃO --- */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -396,7 +415,6 @@
             transition: color 0.3s ease;
         }
         .btn-close-modal:hover { color: var(--primary-green); }
-        
         .modal-body {
             padding: 30px 25px;
             display: flex;
@@ -434,7 +452,6 @@
             width: 40px;
             flex-grow: 1;
             padding: 12px;
-            /* Reutilizando estilos dos inputs globais */
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius);
             font-size: 1rem;
@@ -449,7 +466,6 @@
         }
         .custom-date-group button {
             padding: 12px 15px;
-            /* Reutilizando estilos de botões */
             background: transparent;
             border: 1px solid var(--border-color);
             color: var(--font-color);
@@ -464,7 +480,6 @@
             border-color: var(--primary-green);
         }
 
-
         #btnAdicionar30Dias {
             width: 100%;
             border-color: var(--warning-color);
@@ -476,18 +491,15 @@
             color: var(--bg-color);
         }
 
-
         .modal-footer {
             padding: 20px 25px;
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
-            /* background: var(--bg-color); -> REMOVIDO PARA COR ÚNICA */
             border-top: 1px solid var(--border-color);
         }
         .btn-modal { width: 100%; }
 
-        /* Customização dos botões do modal */
         #btnAlterarSenhaModal {
             border-color: var(--success-color);
             color: var(--success-color);
@@ -507,10 +519,9 @@
             border-color: var(--error-color);
         }
         #btnCopiarModal {
-            grid-column: 1 / -1; /* Ocupa a linha inteira */
+            grid-column: 1 / -1; 
         }
-
-
+        
         /* --- NOTIFICAÇÃO TOAST --- */
         #notificacao {
             position: fixed;
@@ -539,12 +550,61 @@
 
         /* --- RESPONSIVIDADE --- */
         @media (max-width: 1200px) {
-            .main-container { flex-direction: column; }
-            .sidebar { width: 100%; max-height: 40vh; border-right: none; border-bottom: 1px solid var(--border-color); }
-            .content { padding: 25px; gap: 25px; }
+            .main-container {
+                flex-direction: column;
+            }
+
+            .content {
+                padding-top: 100px;
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 90%;
+                max-width: 400px;
+                z-index: 999;
+                border-right: none;
+                border: 1px solid var(--border-color);
+                border-radius: var(--border-radius);
+                box-shadow: var(--glow-effect);
+                padding: 0;
+                overflow: hidden;
+            }
+
+            .sidebar-header {
+                padding: 15px 20px;
+                margin-bottom: 0;
+                border-bottom: 1px solid var(--border-color);
+                cursor: pointer;
+            }
+
+            .sidebar-header .chevron-icon {
+                display: block;
+            }
+            .sidebar.is-open .sidebar-header .chevron-icon {
+                transform: rotate(180deg);
+            }
+
+            .sidebar-body {
+                max-height: 0;
+                transition: max-height 0.4s ease, padding 0.4s ease;
+            }
+            .sidebar.is-open .sidebar-body {
+                max-height: 50vh;
+                padding: 20px;
+            }
+
+            #btnAtualizarOnline {
+                width: 100%;
+                margin-bottom: 15px;
+            }
         }
 
         @media (max-width: 768px) {
+            .content { padding: 100px 20px 20px 20px; }
             header h1 { font-size: 2rem; }
             .management-panel { padding: 25px; }
             .modal-footer { grid-template-columns: 1fr; }
@@ -559,19 +619,21 @@
     </div>
 
     <div class="main-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
+        <aside class="sidebar" id="online-users-sidebar">
+            <div class="sidebar-header" id="sidebar-toggle-header">
                 <i data-feather="rss"></i>
-                <h2>Usuários Online</h2>
+                <h2 id="online-users-title">Usuários Online</h2>
+                <i data-feather="chevron-down" class="chevron-icon"></i>
             </div>
-            <button id="btnAtualizarOnline" class="btn-refresh">
-                <i data-feather="refresh-cw"></i>
-                <span>Atualizar</span>
-            </button>
-            <ul id="listaUsuariosOnline">
-                <!-- Conteúdo dinâmico -->
-            </ul>
+            <div class="sidebar-body">
+                <button id="btnAtualizarOnline" class="btn-refresh">
+                    <i data-feather="refresh-cw"></i>
+                    <span>Atualizar</span>
+                </button>
+                <ul id="listaUsuariosOnline">
+                    <!-- Conteúdo dinâmico -->
+                </ul>
+            </div>
         </aside>
 
         <!-- Conteúdo Principal -->
@@ -664,22 +726,18 @@
         feather.replace();
 
         const API_BASE = "/api"; 
-        let currentUserData = null; // Armazena dados do usuário selecionado no modal
+        let currentUserData = null; 
         
         const api = async (rota, dados = null, metodo = "POST") => {
             document.getElementById('loader').classList.add('show');
-            const config = {
-                method: metodo,
-                headers: { "Content-Type": "application/json" }
-            };
-            
-            const metodoMaiusculo = metodo.toUpperCase();
-            
-            if (dados && metodoMaiusculo !== "GET" && metodoMaiusculo !== "HEAD") {
-                config.body = JSON.stringify(dados);
-            }
-
             try {
+                const config = {
+                    method: metodo,
+                    headers: { "Content-Type": "application/json" }
+                };
+                if (dados && metodo.toUpperCase() !== "GET" && metodo.toUpperCase() !== "HEAD") {
+                    config.body = JSON.stringify(dados);
+                }
                 const res = await fetch(`${API_BASE}/${rota}`, config);
                 if (!res.ok) {
                     const errorData = await res.json();
@@ -715,24 +773,24 @@
         const btnCopiarModal = document.getElementById("btnCopiarModal");
         const btnAlterarSenhaModal = document.getElementById("btnAlterarSenhaModal");
         const btnRemoverModal = document.getElementById("btnRemoverModal");
+        
+        // --- SELETORES DA SIDEBAR/NOTCH ---
+        const sidebar = document.getElementById('online-users-sidebar');
+        const sidebarToggleHeader = document.getElementById('sidebar-toggle-header');
+        const onlineUsersTitle = document.getElementById('online-users-title');
+        const listaUsuariosOnline = document.getElementById("listaUsuariosOnline");
+        const btnAtualizarOnline = document.getElementById("btnAtualizarOnline");
 
-        // --- FUNÇÕES AUXILIARES DE FEEDBACK E FORMATAÇÃO ---
+        // --- FUNÇÕES AUXILIARES ---
         const mostrarNotificacao = (mensagem, tipo = "success") => {
             notificacao.textContent = mensagem;
-            notificacao.className = `${tipo} show`;
+            notificacao.className = ``;
+            notificacao.classList.add(tipo, 'show');
             setTimeout(() => { notificacao.classList.remove('show'); }, 3000);
         };
         
-        const handleSuccess = (mensagem, noReset = false) => {
-            mostrarNotificacao(mensagem);
-            if(!noReset) formCriarUsuario.reset();
-            preencherCamposIniciais();
-            listarUsuarios();
-        };
-        
         const handleErrors = (error) => {
-            const msgTexto = error.message || "Ocorreu um erro desconhecido na operação.";
-            mostrarNotificacao(msgTexto, "error");
+            mostrarNotificacao(error.message || "Ocorreu um erro desconhecido.", "error");
         };
 
         const gerarCredenciaisAleatorias = (tamanho) => {
@@ -747,17 +805,14 @@
             try {
                 const dataObj = new Date(isoString);
                 if (isNaN(dataObj.getTime())) return { dataFormatada: "Data inválida", diasRestantes: "N/A" };
-                
                 const dia = String(dataObj.getUTCDate()).padStart(2, '0');
                 const mes = String(dataObj.getUTCMonth() + 1).padStart(2, '0');
                 const ano = dataObj.getUTCFullYear();
                 const dataFormatada = `${dia}/${mes}/${ano}`;
-
                 const hoje = new Date();
                 hoje.setHours(0, 0, 0, 0);
                 const diffTime = dataObj.getTime() - hoje.getTime();
                 const diasRestantes = diffTime > 0 ? Math.ceil(diffTime / (1000 * 60 * 60 * 24)) : 0;
-                
                 return { dataFormatada, diasRestantes };
             } catch (error) {
                 console.error("Erro ao formatar data:", error);
@@ -765,61 +820,11 @@
             }
         };
         
-        // --- LÓGICA DO MODAL ---
-        const abrirModal = () => modalOverlay.classList.add("show");
-        const fecharModal = () => {
-            modalOverlay.classList.remove("show");
-            currentUserData = null; 
-            diasAdicionarInput.value = ""; // Limpa o input customizado
-        }
-
-        btnCloseModal.addEventListener("click", fecharModal);
-        modalOverlay.addEventListener("click", (e) => {
-            if (e.target === modalOverlay) fecharModal();
-        });
-        
-        // --- LÓGICA DA LISTAGEM DE USUÁRIOS ---
-        const renderizarListaUsuarios = (usuarios) => {
-            userListContainer.innerHTML = "";
-            if (!usuarios || usuarios.length === 0) {
-                userListContainer.innerHTML = "<p>Nenhum usuário encontrado.</p>";
-                return;
-            }
-            usuarios.forEach(user => {
-                const userItem = document.createElement("div");
-                userItem.className = "user-list-item";
-                userItem.dataset.user = JSON.stringify(user);
-                userItem.innerHTML = `
-                    <div class="user-info-details">
-                        <strong>${user.username}</strong>
-                        <span>Senha: ${user.password}</span>
-                    </div>
-                    <i data-feather="edit" style="color: var(--primary-green);"></i>
-                `;
-                userListContainer.appendChild(userItem);
-            });
-            feather.replace(); // Re-renderiza os ícones
-
-            document.getElementById("totalUsuarios").textContent = `Usuários [${usuarios.length}]`;
-        };
-        
-        const listarUsuarios = async () => {
-             userListContainer.innerHTML = "<p>Buscando dados no servidor...</p>";
-             try {
-                const res = await api("listarUsuarios", null, "GET");
-                const usuarios = res.usuarios || res; 
-                todosOsUsuarios = usuarios;
-                renderizarListaUsuarios(usuarios);
-             } catch (error) {
-                handleErrors(error);
-                userListContainer.innerHTML = "<p>Erro ao carregar usuários.</p>";
-             }
-        };
+        // --- LÓGICA DO MODAL DE EDIÇÃO ---
         let diasRestantesInfo = null;
         const obterInfoLogin = async (usuario) => {
             try {
                 const response = await api("infoLogin", { usuario }, "POST"); 
-                
                 if (response && response.exists && response.data) {
                     const { dataFormatada, diasRestantes } = formatarData(response.data);
                     diasRestantesInfo = diasRestantes;
@@ -834,27 +839,95 @@
             }
         };
 
-        searchInput.addEventListener("input", (e) => {
-            const termoBusca = e.target.value.toLowerCase();
+        const abrirModalEdicao = (userData) => {
+            currentUserData = userData;
+            modalUsernameTitle.textContent = `Editando: ${currentUserData.username}`;
+            modalExpiracao.textContent = "Carregando...";
+            modalOverlay.classList.add("show");
+            obterInfoLogin(currentUserData.username);
+        };
+        
+        const fecharModal = () => {
+            modalOverlay.classList.remove("show");
+            currentUserData = null; 
+            diasAdicionarInput.value = "";
+        };
+
+        btnCloseModal.addEventListener("click", fecharModal);
+        modalOverlay.addEventListener("click", (e) => {
+            if (e.target === modalOverlay) fecharModal();
+        });
+        
+        // --- LÓGICA DA LISTAGEM E PESQUISA DE USUÁRIOS ---
+        const renderizarListaUsuarios = (usuarios) => {
+            userListContainer.innerHTML = "";
+            if (!usuarios || usuarios.length === 0) {
+                userListContainer.innerHTML = "<p>Nenhum usuário encontrado.</p>";
+                document.getElementById("totalUsuarios").textContent = "Usuários [0]";
+                return;
+            }
+            usuarios.forEach(user => {
+                const userItem = document.createElement("div");
+                userItem.className = "user-list-item";
+                userItem.dataset.user = JSON.stringify(user);
+                
+                userItem.innerHTML = `
+                    <div class="user-info-details user-list-item-clickable">
+                        <strong>${user.username}</strong>
+                        <div class="password-container">
+                            Senha: 
+                            <span class="password-text" data-password="${user.password}">******</span>
+                        </div>
+                    </div>
+                    <i class="toggle-password-icon" data-feather="eye" title="Mostrar/Ocultar Senha"></i>
+                `;
+                userListContainer.appendChild(userItem);
+            });
+            feather.replace();
+            document.getElementById("totalUsuarios").textContent = `Usuários [${usuarios.length}]`;
+        };
+        
+        const listarUsuarios = async () => {
+             userListContainer.innerHTML = "<p>Buscando dados no servidor...</p>";
+             try {
+                const res = await api("listarUsuarios", null, "GET");
+                todosOsUsuarios = res.usuarios || res;
+                // Renderiza a lista com base no termo de busca atual (se houver)
+                const termoBusca = searchInput.value.toLowerCase();
+                const usuariosFiltrados = todosOsUsuarios.filter(user => user.username.toLowerCase().includes(termoBusca));
+                renderizarListaUsuarios(usuariosFiltrados);
+             } catch (error) {
+                handleErrors(error);
+                userListContainer.innerHTML = "<p>Erro ao carregar usuários.</p>";
+             }
+        };
+
+        // [CORRIGIDO] Event listener da pesquisa
+        searchInput.addEventListener("input", () => {
+            const termoBusca = searchInput.value.toLowerCase();
             const usuariosFiltrados = todosOsUsuarios.filter(user => user.username.toLowerCase().includes(termoBusca));
             renderizarListaUsuarios(usuariosFiltrados);
         });
-        
+
         userListContainer.addEventListener("click", (e) => {
-            const userItem = e.target.closest(".user-list-item");
-            if (userItem) {
-                currentUserData = JSON.parse(userItem.dataset.user);
-                modalUsernameTitle.textContent = `Editando: ${currentUserData.username}`;
-                modalExpiracao.textContent = "Carregando...";
-                abrirModal();
-                obterInfoLogin(currentUserData.username);
+            const toggleIcon = e.target.closest(".toggle-password-icon");
+            if (toggleIcon) {
+                const passwordTextSpan = toggleIcon.closest('.user-list-item').querySelector('.password-text');
+                const isMasked = passwordTextSpan.textContent === '******';
+                passwordTextSpan.textContent = isMasked ? passwordTextSpan.dataset.password : '******';
+                toggleIcon.setAttribute('data-feather', isMasked ? 'eye-off' : 'eye');
+                feather.replace();
+                return;
+            }
+
+            const userItemClickable = e.target.closest(".user-list-item-clickable");
+            if (userItemClickable) {
+                const userItem = userItemClickable.closest(".user-list-item");
+                abrirModalEdicao(JSON.parse(userItem.dataset.user));
             }
         });
 
-        btnAtualizarLista.addEventListener("click", () => {
-             mostrarNotificacao("Atualizando lista...");
-             listarUsuarios();
-        });
+        btnAtualizarLista.addEventListener("click", listarUsuarios);
 
         // --- AÇÕES DO MODAL ---
         const adicionarDias = async (dias) => {
@@ -862,131 +935,130 @@
             try {
                 await api("alterarData", { usuario: currentUserData.username, dias: dias }, "POST");
                 mostrarNotificacao(`${dias} dia(s) adicionados com sucesso!`);
-                obterInfoLogin(currentUserData.username); // Re-busca os dados para atualizar a UI
-                diasAdicionarInput.value = ""; // Limpa o campo após o sucesso
-            } catch (error) {
-                handleErrors(error);
-            }
+                obterInfoLogin(currentUserData.username);
+                diasAdicionarInput.value = "";
+            } catch (error) { handleErrors(error); }
         };
-
-        btnAdicionar30Dias.addEventListener("click", () =>{ 
-            if(diasRestantesInfo !== null && diasRestantesInfo <=0) {
-                  adicionarDias(30)
-                return;
-            }
-            adicionarDias(diasRestantesInfo+30)
+        btnAdicionar30Dias.addEventListener("click", () => { 
+            const diasParaAdicionar = (diasRestantesInfo !== null && diasRestantesInfo > 0) ? (diasRestantesInfo + 30) : 30;
+            adicionarDias(diasParaAdicionar);
         });
         btnAdicionarDiasCustom.addEventListener("click", () => {
             const dias = parseInt(diasAdicionarInput.value, 10);
-            if (dias && dias > 0) {
-                adicionarDias(dias);
-            } else {
-                mostrarNotificacao("Por favor, insira um número de dias válido.", "error");
-            }
+            if (dias && dias > 0) adicionarDias(dias);
+            else mostrarNotificacao("Insira um número de dias válido.", "error");
         });
-        
         btnAlterarSenhaModal.addEventListener("click", async () => {
             if (!currentUserData) return;
-            const novaSenha = prompt(`Digite a nova senha para o usuário "${currentUserData.username}":`);
+            const novaSenha = prompt(`Digite a nova senha para "${currentUserData.username}":`);
             if (novaSenha && novaSenha.trim() !== "") {
                  try {
                     await api("alterarSenha", { user: currentUserData.username, pass: novaSenha.trim() }, "POST");
-                    handleSuccess(`Senha de ${currentUserData.username} alterada!`, true);
+                    mostrarNotificacao(`Senha de ${currentUserData.username} alterada!`);
+                    await listarUsuarios();
                     currentUserData.password = novaSenha.trim();
-                 } catch (error) {
-                    handleErrors(error);
-                 }
+                 } catch (error) { handleErrors(error); }
             }
         });
-
         btnRemoverModal.addEventListener("click", async () => {
              if (!currentUserData) return;
-             if (confirm(`Tem certeza que deseja excluir o usuário "${currentUserData.username}"?\nEsta ação não pode ser desfeita.`)) {
+             if (confirm(`Tem certeza que deseja excluir o usuário "${currentUserData.username}"?`)) {
                 try {
                     const res = await api("removerUsuario", { usuario: currentUserData.username }, "POST");
-                    handleSuccess(res.message);
+                    mostrarNotificacao(res.message);
+                    await listarUsuarios();
                     fecharModal();
-                } catch (error) {
-                    handleErrors(error);
+                } catch (error) { handleErrors(error); }
+            }
+        });
+        btnCopiarModal.addEventListener("click", async () => {
+            if (!currentUserData) return;
+            const { dataFormatada, diasRestantes } = formatarData(currentUserData.expires);
+            const texto = `⭐ Dados de Acesso ⭐\n-------------------------\n👤 Usuário: ${currentUserData.username}\n🔑 Senha: ${currentUserData.password}\n📅 Expira em: ${dataFormatada}\n⏳ Dias restantes: ${diasRestantes}\n-------------------------`;
+            try {
+                await navigator.clipboard.writeText(texto.trim());
+                mostrarNotificacao("Dados copiados!");
+            } catch (err) { mostrarNotificacao("Erro ao copiar.", "error"); }
+        });
+
+     // --- LÓGICA DA SIDEBAR/NOTCH ---
+        const atualizarOnline = async () => {
+            listaUsuariosOnline.innerHTML = "<li>Atualizando...</li>";
+            try {
+                const data = await api("online", null, "GET");
+                listaUsuariosOnline.innerHTML = "";
+                const todosUsuariosOnline = [...new Set([...(data.ssh || []), ...(data.v2ray || [])].map(item => item.user || item.username))];
+                onlineUsersTitle.textContent = `Online [${todosUsuariosOnline.length}]`;
+                if (todosUsuariosOnline.length > 0) {
+                    todosUsuariosOnline.forEach(user => {
+                        const li = document.createElement("li");
+                        li.textContent = user;
+                        li.dataset.username = user;
+                        listaUsuariosOnline.appendChild(li);
+                    });
+                } else {
+                    listaUsuariosOnline.innerHTML = "<li>Nenhum usuário online.</li>";
+                }
+            } catch (error) {
+                console.error("Erro ao buscar usuários online:", error);
+                listaUsuariosOnline.innerHTML = "<li>Erro ao carregar.</li>";
+            }
+        };
+        sidebarToggleHeader.addEventListener('click', () => {
+            if (window.innerWidth <= 1200) sidebar.classList.toggle('is-open');
+        });
+        btnAtualizarOnline.addEventListener("click", atualizarOnline);
+        listaUsuariosOnline.addEventListener('click', (e) => {
+            if (e.target.tagName === 'LI' && e.target.dataset.username) {
+                const username = e.target.dataset.username;
+                const userParaEditar = todosOsUsuarios.find(u => u.username === username);
+                if (userParaEditar) {
+                    if (window.innerWidth <= 1200) sidebar.classList.remove('is-open');
+                    abrirModalEdicao(userParaEditar);
+                } else {
+                    mostrarNotificacao(`Usuário "${username}" não encontrado na lista.`, "error");
                 }
             }
         });
 
-        btnCopiarModal.addEventListener("click", async () => {
-            if (!currentUserData) return;
-            const { dataFormatada, diasRestantes } = formatarData(currentUserData.expires);
-            const textoParaCopiar = `⭐ Dados de Acesso Cliente ⭐\n-------------------------\n👤 Usuário: ${currentUserData.username}\n🔑 Senha: ${currentUserData.password}\n📅 Expira em: ${dataFormatada}\n⏳ Dias restantes: ${diasRestantes}\n-------------------------`.trim();
-            try {
-                await navigator.clipboard.writeText(textoParaCopiar);
-                mostrarNotificacao("Dados copiados para a área de transferência!");
-            } catch (err) {
-                mostrarNotificacao("Erro ao copiar dados.", "error");
-            }
-        });
-
-        // --- FORMULÁRIO DE CRIAÇÃO ---
+        // --- INICIALIZAÇÃO ---
         const preencherCamposIniciais = () => {
             document.getElementById("usuario").value = gerarCredenciaisAleatorias(6);
             document.getElementById("senha").value = gerarCredenciaisAleatorias(6);
             document.getElementById("dias").value = 30;
         };
-        
-        document.getElementById("btnGerarUsuario").addEventListener("click", () => {
-            document.getElementById("usuario").value = gerarCredenciaisAleatorias(6);
-        });
-        document.getElementById("btnGerarSenha").addEventListener("click", () => {
-             document.getElementById("senha").value = gerarCredenciaisAleatorias(6);
-        });
 
+        // [NOVO] Lógica do formulário de criação alterada
         formCriarUsuario.addEventListener("submit", async (e) => {
             e.preventDefault();
             const usuario = document.getElementById("usuario").value;
             const senha = document.getElementById("senha").value;
             const dias = parseInt(document.getElementById("dias").value, 10);
             try {
-                const res = await api("criarUsuario", { usuario, senha, dias }, "POST");
-                handleSuccess(res.message || "Usuário criado com sucesso!");
+                const res = await api("criarUsuario", { usuario, senha, dias });
+                mostrarNotificacao(res.message || "Usuário criado com sucesso!");
+                
+                formCriarUsuario.reset();
+                preencherCamposIniciais();
+                await listarUsuarios();
+                
+                // Abre o modal para o usuário recém-criado
+                const newUser = { username: usuario, password: senha, expires: null }; 
+                abrirModalEdicao(newUser);
+
             } catch (error) {
                 handleErrors(error);
             }
         });
         
-        // --- Sidebar de Usuários Online ---
-        const atualizarOnline = async () => {
-            const lista = document.getElementById("listaUsuariosOnline");
-            lista.innerHTML = "<li>Atualizando...</li>";
-            try {
-                const data = await api("online", null, "GET");
-                lista.innerHTML = "";
-                const todosUsuariosOnline = [...new Set([...(data.ssh || []), ...(data.v2ray || [])].map(item => item.user || item.username))]; 
-                if (todosUsuariosOnline.length > 0) {
-                    todosUsuariosOnline.forEach(user => {
-                        const li = document.createElement("li");
-                        li.textContent = user;
-                        lista.appendChild(li);
-                    });
+        document.getElementById("btnGerarUsuario").addEventListener("click", () => document.getElementById("usuario").value = gerarCredenciaisAleatorias(6));
+        document.getElementById("btnGerarSenha").addEventListener("click", () => document.getElementById("senha").value = gerarCredenciaisAleatorias(6));
 
-                    document.querySelector(".sidebar-header > h2").textContent = `Usuários Online [${todosUsuariosOnline.length}]`;       
-                } else {
-                    lista.innerHTML = "<li>Nenhum usuário online.</li>";
-                }
-                return true
-            } catch (error) {
-                console.error("Erro ao buscar usuários online:", error);
-                lista.innerHTML = "<li>Erro ao carregar online.</li>";
-                return true
-            }
-        };
-
-        document.getElementById("btnAtualizarOnline").addEventListener("click", atualizarOnline);
-
-        // --- Inicialização ---
-        preencherCamposIniciais();
         (async () => {
+            preencherCamposIniciais();
             await atualizarOnline();
             await listarUsuarios();
         })();
-      
     });
 </script>
 </body>

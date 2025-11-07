@@ -3,125 +3,184 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Painel de Controle</title>
+  <title>Login - Painel de Controle [Matrix Edition]</title>
+  
+  <!-- Dependências de Fonte e Ícones -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/feather-icons"></script>
+
   <style>
+    /* --- VARIÁVEIS GLOBAIS (TEMA MATRIX) --- */
+    :root {
+      --bg-color: #0d0d0d;
+      --panel-bg: #1a1a1a;
+      --primary-green: #00ff7f;
+      --font-color: #e0e0e0;
+      --font-color-dark: #8898aa;
+      --border-color: rgba(0, 255, 127, 0.2);
+      --glow-effect: 0 0 8px rgba(0, 255, 127, 0.2), 0 0 16px rgba(0, 255, 127, 0.1);
+      --border-radius: 8px;
+      --transition-speed: 0.3s;
+    }
+
     * {
       box-sizing: border-box;
-      font-family: "Poppins", sans-serif;
+      margin: 0;
+      padding: 0;
+      font-family: 'Source Code Pro', monospace;
     }
 
     body {
-      margin: 0;
-      padding: 0;
-          background: linear-gradient(135deg, #1e88e5, #913bae);
+      background-color: var(--bg-color);
+      color: var(--font-color);
       height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 20px;
+    }
+
+    /* EFEITO SCANLINE SUTIL */
+    body::after {
+      content: " ";
+      display: block;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: linear-gradient(0deg, transparent 50%, rgba(0,0,0,0.3) 50%);
+      background-size: 100% 4px;
+      z-index: -1;
+      opacity: 0.2;
+      pointer-events: none;
     }
 
     .login-container {
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      background: var(--panel-bg);
+      border-radius: var(--border-radius);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--glow-effect);
       width: 100%;
-      max-width: 400px;
+      max-width: 420px;
       padding: 40px;
-      animation: fadeIn 0.6s ease;
+      animation: fadeIn 0.8s ease-out;
     }
 
     @keyframes fadeIn {
       from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(20px) scale(0.98);
       }
       to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
       }
     }
 
     .login-header {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 35px;
+      text-shadow: var(--glow-effect);
     }
 
     .login-header h2 {
-      color: #1e88e5;
-      font-weight: 600;
-      margin-bottom: 5px;
+      color: var(--primary-green);
+      font-weight: 700;
+      font-size: 2rem;
+      margin-bottom: 8px;
     }
 
     .login-header p {
-      color: #777;
-      font-size: 14px;
+      color: var(--font-color-dark);
+      font-size: 1rem;
     }
 
     .form-group {
       position: relative;
-      margin-bottom: 25px;
+      margin-bottom: 30px;
+    }
+
+    .form-group .icon {
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--font-color-dark);
+      transition: color var(--transition-speed) ease;
     }
 
     .form-group input {
       width: 100%;
-      padding: 12px;
-      border: none;
-      border-bottom: 2px solid #ccc;
-      outline: none;
-      transition: all 0.3s;
-      font-size: 15px;
+      padding: 14px 14px 14px 50px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      font-size: 1rem;
+      background-color: var(--bg-color);
+      color: var(--font-color);
+      transition: all var(--transition-speed) ease;
     }
+    
+    .form-group input:-webkit-autofill,
+    .form-group input:-webkit-autofill:hover, 
+    .form-group input:-webkit-autofill:focus, 
+    .form-group input:-webkit-autofill:active  {
+        -webkit-box-shadow: 0 0 0 30px var(--bg-color) inset !important;
+        -webkit-text-fill-color: var(--font-color) !important;
+    }
+
 
     .form-group input:focus {
-      border-color: #1e88e5;
+      outline: none;
+      border-color: var(--primary-green);
+      background-color: var(--panel-bg);
+      box-shadow: var(--glow-effect);
     }
 
-    .form-group label {
-      position: absolute;
-      left: 0;
-      top: 12px;
-      color: #999;
-      font-size: 15px;
-      transition: all 0.3s;
-      pointer-events: none;
+    .form-group input:focus + .icon {
+      color: var(--primary-green);
     }
 
-    .form-group input:focus + label,
-    .form-group input:valid + label {
-      top: -8px;
-      left: 0;
-      font-size: 13px;
-      color: #1e88e5;
-    }
-
-    .btn {
+    .btn-submit {
       width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      background: #1e88e5;
-      color: #fff;
+      padding: 15px;
+      background: transparent;
+      border: 1px solid var(--primary-green);
+      color: var(--primary-green);
+      border-radius: var(--border-radius);
+      font-size: 1.1rem;
       font-weight: 600;
       cursor: pointer;
-      font-size: 16px;
-      transition: 0.3s;
+      transition: all var(--transition-speed) ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
     }
 
-    .btn:hover {
-      background: #1565c0;
+    .btn-submit:hover {
+      background-color: var(--primary-green);
+      color: var(--bg-color);
+      box-shadow: var(--glow-effect);
+      transform: translateY(-3px);
+    }
+    
+    .btn-submit:active {
+        transform: translateY(-1px);
     }
 
     .footer {
       text-align: center;
-      margin-top: 20px;
-      color: #888;
-      font-size: 13px;
+      margin-top: 30px;
+      color: var(--font-color-dark);
+      font-size: 0.8rem;
     }
 
     @media (max-width: 480px) {
       .login-container {
-        margin: 0 20px;
-        padding: 30px 20px;
+        padding: 30px 25px;
       }
     }
   </style>
@@ -129,22 +188,25 @@
 <body>
   <div class="login-container">
     <div class="login-header">
-      <h2>Bem-vindo</h2>
-      <p>Faça login para acessar o painel</p>
+      <h2>Acesso Restrito</h2>
+      <p>Inicie sua sessão para continuar</p>
     </div>
 
     <form id="loginForm">
       <div class="form-group">
-        <input type="text" id="email" required>
-        <label for="email">Usuário</label>
+        <input type="text" id="email" required autocomplete="username">
+        <i class="icon" data-feather="user"></i>
       </div>
 
       <div class="form-group">
-        <input type="password" id="password" required>
-        <label for="password">Senha</label>
+        <input type="password" id="password" required autocomplete="current-password">
+        <i class="icon" data-feather="key"></i>
       </div>
 
-      <button type="submit" class="btn">Entrar</button>
+      <button type="submit" class="btn-submit">
+        <i data-feather="log-in"></i>
+        <span>Conectar</span>
+      </button>
     </form>
 
     <div class="footer">
@@ -153,6 +215,9 @@
   </div>
 
   <script>
+    // Inicializa os ícones
+    feather.replace();
+
     const form = document.getElementById("loginForm");
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
