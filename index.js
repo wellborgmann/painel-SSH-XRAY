@@ -51,18 +51,19 @@ let redisStore;
 try {
     const RedisStoreFactory = require('connect-redis');
     
-    // Tentativa robusta de extrair e chamar a função construtora.
-    // Usamos um fallback seguro: ou a função está no .default ou é o objeto raiz.
-    const ConnectRedisStore = RedisStoreFactory.default || RedisStoreFactory; 
+    // CORREÇÃO: Trata a exportação CJS/ESM do connect-redis.
+    // O pacote exporta uma função factory que deve ser chamada passando 'session'
+    // para obter o construtor do Store.
+    // 
+    // Usamos (RedisStoreFactory.default || RedisStoreFactory) para pegar a função factory correta,
+    // e então a chamamos imediatamente com (session) para obter o construtor (RedisStoreConstructor).
+    const RedisStoreConstructor = (RedisStoreFactory.default || RedisStoreFactory)(session); 
 
     // Verificação de segurança final: se não for uma função, lançamos um erro de tipagem.
-    if (typeof ConnectRedisStore !== 'function') {
-        throw new TypeError("ConnectRedisStore não é uma função. Problema de importação CJS/ESM.");
+    if (typeof RedisStoreConstructor !== 'function') {
+        throw new TypeError("ConnectRedisStore não é uma função construtora. Problema de exportação do pacote.");
     }
     
-    // Chamar a função factory com o express-session para obter o Store Constructor
-    const RedisStoreConstructor = ConnectRedisStore(session); 
-
     // Instanciar o Store
     redisStore = new RedisStoreConstructor({
       client: redisClient,
@@ -81,6 +82,7 @@ async function initializeApp() {
     // Se o RedisStore foi configurado com sucesso (sem erro de importação), tentamos conectar.
     if (redisStore) {
         try {
+            // A conexão é assíncrona e OBRIGATÓRIA antes de usar o Store.
             await redisClient.connect(); 
             console.log("Conexão Redis estabelecida com sucesso.");
         } catch (error) {
@@ -250,10 +252,6 @@ async function initializeApp() {
     // ======= INICIALIZAÇÃO E LISTEN DO SERVIDOR =======
     // ====================================================
 
-    // Correção de erro na inicialização e ajuste para o ambiente de deploy (Render, etc.)
-
-
-
     // Teste de conexão inicial ou outras operações assíncronas
     (async () => {
        try {
@@ -268,7 +266,3 @@ async function initializeApp() {
 export default app;
 // Inicia a aplicação
 initializeApp();
-
-// Remover o 'export default app;' para garantir que ele rode como um servidor persistente.
-
-
