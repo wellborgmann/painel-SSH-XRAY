@@ -811,13 +811,14 @@
                 userListContainer.innerHTML = "<p>Erro ao carregar usuários.</p>";
              }
         };
-
+        let diasRestantesInfo = null;
         const obterInfoLogin = async (usuario) => {
             try {
                 const response = await api("infoLogin", { usuario }, "POST"); 
-
+                
                 if (response && response.exists && response.data) {
                     const { dataFormatada, diasRestantes } = formatarData(response.data);
+                    diasRestantesInfo = diasRestantes;
                     modalExpiracao.textContent = `${dataFormatada} (${diasRestantes} dias)`;
                     if(currentUserData) currentUserData.expires = response.data;
                 } else {
@@ -864,7 +865,13 @@
             }
         };
 
-        btnAdicionar30Dias.addEventListener("click", () => adicionarDias(30));
+        btnAdicionar30Dias.addEventListener("click", () =>{ 
+            if(diasRestantesInfo !== null && diasRestantesInfo <=0) {
+                  adicionarDias(30)
+                return;
+            }
+            adicionarDias(diasRestantesInfo+30)
+        });
         btnAdicionarDiasCustom.addEventListener("click", () => {
             const dias = parseInt(diasAdicionarInput.value, 10);
             if (dias && dias > 0) {
