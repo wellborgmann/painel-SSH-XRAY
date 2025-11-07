@@ -957,9 +957,11 @@
                 } else {
                     lista.innerHTML = "<li>Nenhum usuário online.</li>";
                 }
+                return true
             } catch (error) {
                 console.error("Erro ao buscar usuários online:", error);
                 lista.innerHTML = "<li>Erro ao carregar online.</li>";
+                return true
             }
         };
 
@@ -967,8 +969,11 @@
 
         // --- Inicialização ---
         preencherCamposIniciais();
-        atualizarOnline();
-        listarUsuarios();
+        (async () => {
+            await atualizarOnline();
+            await listarUsuarios();
+        })();
+      
     });
 </script>
 </body>
