@@ -20,8 +20,7 @@ const connSettings = {
 };
 
 // =======================================================
-// 💡 LÓGICA STATELESS (VERCEL COMPATÍVEL)
-// Uma nova conexão é criada e fechada para cada operação.
+// FUNÇÃO GENÉRICA SSH
 // =======================================================
 
 /**
@@ -62,11 +61,10 @@ export function executarComandoSSH(comando) {
 }
 
 // =======================================================
-// Exportações de Gerenciamento de Usuários (Ajustadas para Stateless)
+// OPERAÇÕES SSH ATÔMICAS (CRIAÇÃO E MODIFICAÇÃO)
 // =======================================================
 
-
-// Função para criar um usuário SSH no servidor
+// Função para criar um usuário SSH (Apenas a criação é feita via useradd)
 export function criarUsuario(login, senha, dias, limite) {
   const comando = `
       #!/bin/bash
@@ -87,7 +85,42 @@ export function criarUsuario(login, senha, dias, limite) {
   return executarComandoSSH(comando);
 }
 
-// Função para reiniciar o serviço V2Ray
+/**
+ * Altera a senha e a data de expiração de um usuário SSH existente.
+ * *** NUNCA REMOVE O USUÁRIO. APENAS MODIFICA. ***
+ * @param {string} login O nome de usuário.
+ * @param {string} senha A nova senha.
+ * @param {number} dias O novo número de dias de expiração.
+ * @returns {Promise<string>} O output do comando.
+ */
+export function alterarUsuarioSSH(login, senha, dias) {
+  const comando = `
+      #!/bin/bash
+      username="${login}"
+      password="${senha}"
+      dias="${dias}"
+      
+      # 1. Altera a data de expiração (chage -E)
+      finaldate=$(date "+%Y-%m-%d" -d "+$dias days")
+      chage -E "$finaldate" "$username"
+      
+      # 2. Altera a senha (chpasswd - Operação atômica)
+      # Requer permissão sudo para o usuário SSH na VPS
+      echo "${username}:${password}" | sudo chpasswd
+      
+      # 3. Atualiza o arquivo de senha SSHPlus
+      echo "$password" > /etc/SSHPlus/senha/"$username"
+      
+      exit 0
+    `;
+
+  return executarComandoSSH(comando);
+}
+
+// =======================================================
+// FUNÇÕES DE SERVIÇO (V2RAY)
+// =======================================================
+
 function restartV2Ray() {
   return executarComandoSSH("systemctl restart xray");
 }
@@ -100,8 +133,6 @@ function checkV2RayStatus() {
 
 function validarJsonV2Ray(json) {
   try {
-    // Nota: O método de validação JSON do original pode não ser o ideal, 
-    // mas foi mantido para fins de conversão.
     JSON.parse(JSON.stringify(json)); 
     return true;
   } catch (error) {
@@ -118,46 +149,61 @@ function newV2ray(email) {
   };
 }
 
-// Função principal para criar um novo usuário VPN (SSH e V2Ray)
+// =======================================================
+// EXPORTAÇÕES PRINCIPAIS
+// =======================================================
+
+/**
+ * Função principal para criar um novo usuário VPN (SSH e V2Ray).
+ * Inclui verificação de duplicidade no JSON.
+ */
 export async function NewUserVPN(data) {
   console.log("Iniciando criação de usuário VPN...");
 
   try {
-    // Criar novo usuário V2Ray e atualizar o JSON
+    // 1. Verificar e Adicionar novo usuário V2Ray ao JSON
     const newUserV2 = newV2ray(data.user);
     const arquivo = await lerJson();
 
-  // Encontra o inbound correto
-const inboundVless = arquivo.inbounds.find(
-  (inbound) => inbound.protocol === "vless" && inbound.settings?.clients
-);
+    // Encontra o inbound correto (VLESS)
+    const inboundVless = arquivo.inbounds.find(
+      (inbound) => inbound.protocol === "vless" && inbound.settings?.clients
+    );
 
-if (!inboundVless) {
-  throw new Error("Nenhum inbound VLESS com lista de clients encontrado!");
-}
+    if (!inboundVless) {
+      throw new Error("Nenhum inbound VLESS com lista de clients encontrado!");
+    }
+    
+    // VERIFICAÇÃO DE DUPLICIDADE (CHAVE DE SEGURANÇA)
+    const userExistsInV2Ray = inboundVless.settings.clients.some(
+      (client) => client.email === data.user
+    );
 
-// Adiciona o novo usuário ao array
-inboundVless.settings.clients.push(newUserV2);
+    if (userExistsInV2Ray) {
+      throw new Error(`Usuário '${data.user}' já existe na configuração do V2Ray. A operação foi abortada.`);
+    }
+
+    // Adiciona o novo usuário ao array APENAS SE NÃO EXISTIR
+    inboundVless.settings.clients.push(newUserV2);
 
     
     if (!validarJsonV2Ray(arquivo)) {
       throw new Error("Erro de formatação no JSON de configuração do V2Ray!");
     }
 
+    // Grava o JSON de forma atômica
     await SalvarJson(arquivo);
 
-    // Executar as operações SSH e reiniciar V2Ray em paralelo usando Promise.all
+    // 2. Executar as operações SSH e reiniciar V2Ray em paralelo
     await Promise.all([
       criarUsuario(data.user, data.password, data.days, data.limit),
       daemonReload(),
       restartV2Ray(),
     ]);
 
-    // Verificar o status do V2Ray após reiniciar
     const status = await checkV2RayStatus();
     console.log("Status do V2Ray após reiniciar:", status);
 
-    // Retornar os dados combinados do usuário criado
     return {
       username: data.user,
       password: data.password,
@@ -170,6 +216,26 @@ inboundVless.settings.clients.push(newUserV2);
     throw error;
   }
 }
+
+/**
+ * Altera a senha e a data de expiração de um usuário de forma segura,
+ * sem removê-lo previamente.
+ * @param {object} data Objeto contendo user, pass, e days.
+ * @returns {Promise<boolean>} Retorna true em caso de sucesso.
+ */
+export async function alterarSenha(data) {
+  try {
+    // Usa a modificação atômica (chage/chpasswd)
+    await alterarUsuarioSSH(data.user, data.pass, data.days);
+    
+    console.log(`Senha e data alteradas para o usuário: ${data.user}`);
+    return true; 
+  } catch (error) {
+    console.error("Erro na alteração de senha (modificação):", error);
+    throw error;
+  }
+}
+
 
 export function getUsers() {
   const command = "awk -F: '$3 >= 1000 && $3 < 65534 { print $1 }' /etc/passwd";
@@ -191,13 +257,6 @@ export function alterarData(login, dias) {
   chage -E $finaldate $usuario`;
   return executarComandoSSH(comando);
 }
-
-
-const comando = `echo "FZpwoU:1111" | sudo chpasswd`;
-// Esta linha deve ser removida ou alterada, pois será executada toda vez que o módulo for carregado
-// (o que acontece em cada requisição na Vercel). Vou comentar ela por segurança.
-// executarComandoSSH(comando);
-
 
 export async function online() {
   try {
@@ -226,7 +285,7 @@ export async function online() {
     echo "$json_output"
   `;
     const result = await executarComandoSSH(command);
-    // Nota: O seu comando shell está formatado para retornar um JSON
+    
     const { ssh: sshUsersArray, v2ray: v2rayUsersArray } = JSON.parse(result);
     
     const sshCounts = {};
@@ -252,6 +311,10 @@ export async function online() {
     console.log(error);
   }
 }
+
+/**
+ * Remove um usuário completamente ou apenas a parte SSH (modo editar).
+ */
 export async function removerUsuarioSSH(username, editar) {
   const comandoRemoverUsuario = `
       USR_EX="${username}";
@@ -267,8 +330,13 @@ export async function removerUsuarioSSH(username, editar) {
   `;
 
   if (editar) {
+    // Modo Edição: Remove apenas o SSH. Não mexe no V2Ray.
     return executarComandoSSH(comandoRemoverUsuario);
   }
+
+  // MODO REMOÇÃO COMPLETA: 1. Remover SSH, 2. Alterar JSON (Ordem mais segura)
+  
+  await executarComandoSSH(comandoRemoverUsuario); 
 
   let users = await lerJson();
   users.inbounds.forEach(inbound => {
@@ -278,30 +346,16 @@ export async function removerUsuarioSSH(username, editar) {
       );
     }
   });
-  await SalvarJson(users);
+  await SalvarJson(users); 
 
-  return executarComandoSSH(comandoRemoverUsuario);
-}
-
-
-
-export async function alterarSenha(data) {
-  try {
-    // O parâmetro 'true' indica para o 'removerUsuarioSSH' não mexer no JSON do V2Ray
-    await removerUsuarioSSH(data.user, true); 
-    await criarUsuario(data.user, data.pass, data.days, 1);
-    return true; 
-  } catch (error) {
-    console.log(error);
-    throw error;
-  }
+  return true; 
 }
 
 
 export function infoLogin(loginName) {
   return new Promise((resolve, reject) => {
     const comando = `chage -l ${loginName} | grep -E 'Account expires' | cut -d ' ' -f3-`;
-    const conn = new Client(); // Novo cliente para esta execução
+    const conn = new Client(); 
     let dataReceived = "";
     
     conn.on("error", (err) => {
@@ -318,7 +372,7 @@ export function infoLogin(loginName) {
           }
           stream
             .on("close", () => {
-              conn.end(); // CRÍTICO: Encerra a conexão após o comando
+              conn.end();
               if (dataReceived) {
                 const trimmedData = dataReceived.trim();
                 if (trimmedData === "never") {
@@ -332,7 +386,6 @@ export function infoLogin(loginName) {
                   }
                 }
               } else {
-                // Assumindo que se não houver dados, o usuário não existe ou comando falhou
                 resolve({ loginName, exists: false }); 
               }
             })
@@ -348,7 +401,6 @@ export function infoLogin(loginName) {
   });
 }
 
-// Nota: A função 'isExpired' estava definida, mas não era exportada ou usada no exemplo de uso
 export function isExpired(obj) {
   const now = new Date();
   if (!obj || !obj.data) return false;
@@ -357,13 +409,8 @@ export function isExpired(obj) {
   return data < now;
 }
 
-/**
- * Lista todos os usuários e senhas do diretório remoto /etc/SSHPlus/senha
- * Retorna um array de objetos: [{ username, password }, ...]
- */
 export async function listarUsuarios() {
   try {
-    // Comando para ler todos os arquivos e conteúdos do diretório
     const command = `
       for file in /etc/SSHPlus/senha/*; do
         [ -f "$file" ] && echo "$(basename "$file") $(cat "$file")"
@@ -372,7 +419,6 @@ export async function listarUsuarios() {
     
     const resultado = await executarComandoSSH(command);
 
-    // Cada linha terá: username password
     const usuarios = resultado
       .split("\n")
       .map(line => line.trim())
@@ -388,16 +434,3 @@ export async function listarUsuarios() {
     return [];
   }
 }
-
-// Bloco IIFE (Immediately Invoked Function Expression) para manter a lógica de teste original
-// Comentado para evitar a execução imediata ao importar o módulo
-/*
-(async () => {
-  const usuarios = await infoLogin("apollo404");
-  console.log(usuarios);
-})();
-*/
-
-// O export default foi removido, mas você pode exportar todas as funções separadamente (o que já foi feito)
-// ou exportá-las como um objeto, se preferir.
-// O código acima exporta todas as funções que estavam no `module.exports`.
