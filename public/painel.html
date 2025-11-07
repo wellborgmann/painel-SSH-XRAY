@@ -868,7 +868,7 @@
         };
 
         const gerarCredenciaisAleatorias = (tamanho) => {
-            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            const chars = 'abcdefghijklmnopqrstuvwxyz';
             let resultado = '';
             for (let i = 0; i < tamanho; i++) resultado += chars.charAt(Math.floor(Math.random() * chars.length));
             return resultado;
