@@ -849,12 +849,14 @@
             modalExpiracao.textContent = "Carregando...";
             modalOverlay.classList.add("show");
             obterInfoLogin(currentUserData.username);
+            history.pushState({ modalAberto: true }, "", "#modal");s
         };
         
         const fecharModal = () => {
             modalOverlay.classList.remove("show");
             currentUserData = null; 
             diasAdicionarInput.value = "";
+             if (location.hash === "#modal") history.back();
         };
 
         btnCloseModal.addEventListener("click", fecharModal);
