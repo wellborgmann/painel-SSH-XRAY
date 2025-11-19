@@ -70,7 +70,7 @@ export function criarUsuario(login, senha, dias, limite) {
     pass=$(openssl passwd -1 "$password")
 
     useradd -e "$final" -M -s /bin/false -p "$pass" "$username"
-    echo "$password" > /etc/SSHPlus/senha/"$username"
+    echo "$password" > /opt/sshorizon/senha/"$username"
     echo "$username $sshlimiter" >> /root/usuarios.db
   `;
   return executarComandoSSH(comando);
@@ -81,7 +81,7 @@ export function alterarUsuarioSSH(login, senha) {
     username="${login}"
     password="${senha}"
     echo "${login}:${senha}" | sudo chpasswd
-    echo "$password" > /etc/SSHPlus/senha/"$username"
+    echo "$password" > /opt/sshorizon/senha/"$username"
   `;
   return executarComandoSSH(comando);
 }
@@ -239,7 +239,7 @@ export async function removerUsuarioSSH(username, editar) {
         kill -9 $(ps -fu "$USR_EX" | awk '{print $2}' | grep -v PID);
         userdel "$USR_EX";
         grep -v "^$USR_EX[[:space:]]" /root/usuarios.db > /tmp/ph && mv /tmp/ph /root/usuarios.db;
-        rm -f /etc/SSHPlus/senha/"$USR_EX" /etc/usuarios/"$USR_EX";
+        rm -f /opt/sshorizon/senha/"$USR_EX" /etc/usuarios/"$USR_EX";
         exit 0;
     fi
     exit 1;
@@ -329,7 +329,7 @@ export function isExpired(obj) {
 export async function listarUsuarios() {
   try {
     const command = `
-      for file in /etc/SSHPlus/senha/*; do
+      for file in /opt/sshorizon/senha/*; do
         [ -f "$file" ] && echo "$(basename "$file") $(cat "$file")"
       done
     `;
